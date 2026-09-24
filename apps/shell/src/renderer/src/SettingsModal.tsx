@@ -40,14 +40,12 @@ import type {
 import { useI18n } from './locale'
 import type { StringKey, TFunc } from './locale'
 import type {
-  AccountStatus,
   AiCatalogEntry,
   AuthorNameSetting,
   DocTheme,
   UiTheme,
 } from '../../shared/home-api'
 import { ProviderLogo } from './provider-logos'
-import { IntegrationsPane, skillUpdateDue } from './IntegrationsPane'
 import './settings.css'
 
 // ── Settings modal (opened from the account menu) ─────────
@@ -167,14 +165,12 @@ function CustomFontSizeInput({
   )
 }
 
-export type SectionId = 'account' | 'aiModel' | 'aiMedia' | 'general' | 'integrations' | 'about'
+type SectionId = 'aiModel' | 'aiMedia' | 'general' | 'about'
 
 const SECTIONS: readonly { id: SectionId; labelKey: StringKey }[] = [
-  { id: 'account', labelKey: 'setSecAccount' },
   { id: 'aiModel', labelKey: 'setSecAiModel' },
   { id: 'aiMedia', labelKey: 'setSecAiMedia' },
   { id: 'general', labelKey: 'setSecGeneral' },
-  { id: 'integrations', labelKey: 'setSecIntegrations' },
   { id: 'about', labelKey: 'setSecAbout' },
 ]
 
@@ -209,32 +205,6 @@ function SectionIcon({ id }: { id: SectionId }) {
           strokeLinejoin="round"
         />
         <circle cx="10.5" cy="6" r="1.1" fill="currentColor" />
-      </svg>
-    )
-  }
-  if (id === 'account') {
-    return (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="8" cy="5.2" r="2.9" stroke="currentColor" strokeWidth="1.3" />
-        <path
-          d="M2.7 13.6a5.5 5.5 0 0 1 10.6 0"
-          stroke="currentColor"
-          strokeWidth="1.3"
-          strokeLinecap="round"
-        />
-      </svg>
-    )
-  }
-  if (id === 'integrations') {
-    return (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path
-          d="M5.5 2v3M10.5 2v3M4 5h8v2.5a4 4 0 0 1-8 0V5ZM8 11.5V14"
-          stroke="currentColor"
-          strokeWidth="1.3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
       </svg>
     )
   }
@@ -1672,54 +1642,15 @@ function AiStatusPill({ status }: { status: AiStatus | null }) {
 }
 
 export interface SettingsModalProps {
-  status: AccountStatus | null
-  loggingOut: boolean
-  /** browser sign-in in progress (spinner shows on the account entry) */
-  loginWaiting: boolean
-  /** device auth URL while waiting — rescue actions when the browser did not auto-open */
-  loginUrl: string | null
-  urlCopied: boolean
-  onOpenLoginUrl: () => void
-  onCopyLoginUrl: () => void
   onClose: () => void
-  /** the decision-model search settings were saved; the home search re-judges or drops its current order */
-  onFileSearchChange?: () => void
-  /** closes the modal and launches the Genspark login flow (progress shows on the account entry) */
-  onLogin: () => void
-  onLogout: () => void
-  /** an installed skill is older than the bundled one: dot on the Integrations entry */
-  skillUpdateDue?: boolean
-  onSkillUpdateDue?: (due: boolean) => void
-  /** open on this section / block instead of the account page */
-  target?: SettingsTarget | null
 }
 
-export function SettingsModal({
-  status,
-  loggingOut,
-  loginWaiting,
-  loginUrl,
-  urlCopied,
-  onOpenLoginUrl,
-  onCopyLoginUrl,
-  onClose,
-  onFileSearchChange,
-  onLogin,
-  onLogout,
-  skillUpdateDue: updateDue = false,
-  onSkillUpdateDue,
-  target,
-}: SettingsModalProps) {
+export function SettingsModal({ onClose }: SettingsModalProps) {
   const { lang, setLang, t } = useI18n()
-  const [section, setSection] = useState<SectionId>(target?.section ?? 'account')
-  useEffect(() => {
-    if (target) setSection(target.section)
-  }, [target])
+  const [section, setSection] = useState<SectionId>('aiModel')
   const [theme, setTheme] = useState<UiTheme>('system')
   const [docTheme, setDocTheme] = useState<DocTheme>('follow')
   const [saveDir, setSaveDir] = useState('')
-  const [analyticsOn, setAnalyticsOn] = useState(true)
-  const [analyticsSaving, setAnalyticsSaving] = useState(false)
   const [autoSaveOn, setAutoSaveOn] = useState(false)
   const [defaultApp, setDefaultApp] = useState<DefaultAppStatus | null>(null)
   const [defaultAppBusy, setDefaultAppBusy] = useState(false)
@@ -1741,9 +1672,6 @@ export function SettingsModal({
     })
     void window.aiOffice.getDefaultSaveDir?.().then((dir) => {
       if (alive && dir) setSaveDir(dir)
-    })
-    void window.aiOffice.getAnalyticsEnabled?.().then((on) => {
-      if (alive) setAnalyticsOn(on !== false)
     })
     void window.aiOffice.getAutoSaveDefault?.().then((v) => {
       if (alive) setAutoSaveOn(v.on)
@@ -1821,41 +1749,6 @@ export function SettingsModal({
     })
   }
 
-  // Windows only opens the system page; re-read ownership when the user comes back
-  useEffect(() => {
-    if (!defaultApp?.manualOnly) return
-    const refresh = () => {
-      void window.aiOffice.getDefaultAppStatus?.().then(setDefaultApp)
-    }
-    window.addEventListener('focus', refresh)
-    return () => window.removeEventListener('focus', refresh)
-  }, [defaultApp?.manualOnly])
-
-  const claimDefaultApp = () => {
-    setDefaultAppBusy(true)
-    setDefaultAppFailed(false)
-    void window.aiOffice
-      .setDefaultApp()
-      .then((st) => {
-        setDefaultApp(st)
-        if (!st.manualOnly && st.state !== 'default') setDefaultAppFailed(true)
-      })
-      .catch(() => setDefaultAppFailed(true))
-      .finally(() => setDefaultAppBusy(false))
-  }
-
-  const defaultAppDesc = (() => {
-    if (!defaultApp) return ''
-    if (defaultAppFailed) return t('setDefaultAppFailed')
-    if (defaultApp.state === 'default') return t('setDefaultAppIs')
-    if (defaultApp.state === 'other' && defaultApp.others.length > 0)
-      return t('setDefaultAppOther', { app: defaultApp.others.join(', ') })
-    return t('setDefaultAppDesc')
-  })()
-
-  const loggedIn = status?.loggedIn ?? false
-  const email = status?.email ?? ''
-
   return (
     <div
       className="set-overlay"
@@ -1888,61 +1781,10 @@ export function SettingsModal({
               >
                 <SectionIcon id={s.id} />
                 {t(s.labelKey)}
-                {s.id === 'integrations' && updateDue && (
-                  <span className="set-nav-dot" role="img" aria-label={t('intgUpdateDue')} />
-                )}
               </button>
             ))}
           </nav>
-          <div className={'set-pane' + (section === 'aiModel' ? ' set-pane-ai-model' : '')}>
-            {section === 'account' && (
-              <>
-                <h3 className="set-pane-title">{t('setSecAccount')}</h3>
-                <Field label={t('setEmail')} value={loggedIn ? email : t('setNotLoggedIn')} />
-                {loggedIn && (
-                  <Field
-                    label={t('credits')}
-                    value={
-                      status?.creditBalance === undefined
-                        ? '—'
-                        : Math.floor(status.creditBalance).toLocaleString('en-US')
-                    }
-                    action={
-                      <button
-                        className="set-btn"
-                        data-tip={t('creditsTip')}
-                        onClick={() => void window.aiOffice.openCreditUsage?.()}
-                      >
-                        {t('setViewUsage')}
-                      </button>
-                    }
-                  />
-                )}
-                <div className="set-pane-footer">
-                  {loggedIn ? (
-                    <button className="set-btn danger" disabled={loggingOut} onClick={onLogout}>
-                      {loggingOut ? t('loggingOut') : t('logout')}
-                    </button>
-                  ) : (
-                    <>
-                      {loginWaiting && loginUrl && (
-                        <>
-                          <button className="set-btn" onClick={onOpenLoginUrl}>
-                            {t('loginOpenManually')}
-                          </button>
-                          <button className="set-btn" onClick={onCopyLoginUrl}>
-                            {urlCopied ? t('loginCopied') : t('loginCopyUrl')}
-                          </button>
-                        </>
-                      )}
-                      <button className="set-btn primary" onClick={onLogin}>
-                        {loginWaiting ? t('waitingShort') : t('loginGenspark')}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
+          <div className="set-pane">
             {section === 'aiModel' && <AiModelPane t={t} />}
             {section === 'aiMedia' && (
               <AiMediaPane
@@ -2159,36 +2001,7 @@ export function SettingsModal({
                     }}
                   />
                 </div>
-                <div className="set-field">
-                  <div className="set-field-text">
-                    <div className="set-field-stack">
-                      <div className="set-field-label">{t('setAnalytics')}</div>
-                      <div className="set-field-desc">{t('setAnalyticsDesc')}</div>
-                    </div>
-                  </div>
-                  <button
-                    className="set-switch"
-                    role="switch"
-                    aria-checked={analyticsOn}
-                    aria-label={t('setAnalytics')}
-                    disabled={analyticsSaving}
-                    onClick={() => {
-                      const next = !analyticsOn
-                      setAnalyticsSaving(true)
-                      void window.aiOffice
-                        .setAnalyticsEnabled(next)
-                        .then((persisted) => {
-                          if (persisted) setAnalyticsOn(next)
-                        })
-                        .catch(() => {})
-                        .finally(() => setAnalyticsSaving(false))
-                    }}
-                  />
-                </div>
               </>
-            )}
-            {section === 'integrations' && (
-              <IntegrationsPane t={t} onStatus={(st) => onSkillUpdateDue?.(skillUpdateDue(st))} />
             )}
             {section === 'about' && (
               <>

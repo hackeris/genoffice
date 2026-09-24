@@ -21,8 +21,6 @@ interface Slide {
   showOffer?: boolean
   /** closing slide shows the "star us on GitHub" hint */
   showStar?: boolean
-  /** closing slide explains default-on analytics and how to disable it */
-  showAnalyticsNotice?: boolean
   art: 'logo' | 'gift' | 'check'
 }
 
@@ -35,7 +33,6 @@ const SLIDES: readonly Slide[] = [
     bodyKey: 'onbNote3',
     bodyDim: true,
     showStar: true,
-    showAnalyticsNotice: true,
     art: 'check',
   },
 ]
@@ -210,14 +207,6 @@ export function Onboarding({ onDone }: OnboardingProps) {
                     </svg>
                     {t('starOnGitHub')}
                   </button>
-                </div>
-              )}
-              {s.showAnalyticsNotice && (
-                <div className="onb-consent">
-                  <span className="onb-consent-copy">
-                    <span className="onb-consent-title">{t('setAnalytics')}</span>
-                    <span className="onb-consent-desc">{t('setAnalyticsDesc')}</span>
-                  </span>
                 </div>
               )}
               {s.showOffer && (
