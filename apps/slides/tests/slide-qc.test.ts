@@ -116,9 +116,10 @@ describe('vision capability fallback', () => {
 
   it('does not send screenshots to text-only models under a vision-capable provider', () => {
     const settings = defaultAiSettings()
-    settings.providers.genspark.model = 'deep-seek-v4-flash'
+    settings.provider = 'deepseek'
+    settings.providers.deepseek.model = 'deepseek-v4-pro'
     expect(settingsSupportVision(settings)).toBe(false)
-    settings.providers.genspark.model = 'claude-opus-4-7'
+    settings.providers.deepseek.model = 'deepseek-flash'
     expect(settingsSupportVision(settings)).toBe(true)
   })
 

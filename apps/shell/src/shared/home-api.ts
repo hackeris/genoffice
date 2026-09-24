@@ -246,10 +246,12 @@ export interface HomeApi {
   }): Promise<{ ok: boolean; error?: string }>
   /** web search provider catalog */
   getAiSearchProviders(): AiSearchProviderMeta[]
-  /** one minimal query against the given key (genspark reports the gsk login state) */
+  /** one minimal query against the given backend */
   testAiSearchSettings(input: {
     provider: AiSearchProviderId
     apiKey: string
+    /** custom endpoints only: the self-hosted search URL */
+    baseUrl?: string
   }): Promise<{ ok: boolean; error?: string }>
 }
 

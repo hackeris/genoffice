@@ -1,21 +1,20 @@
 import {
   activeMediaProvider,
   activeSearchProvider,
-  cloudToolsEnabled,
   imageGenerationAvailable,
   mediaAnalysisAvailable,
 } from '@genoffice/ai-provider'
-import { hasGskAuth, readAiSettingsFile } from '@genoffice/ai-search'
+import { readAiSettingsFile } from '@genoffice/ai-search'
 import { aiSettingsPath, prepareCloud } from '../cloud'
 import type { CommandDef } from '../registry'
 import { appLaunch } from '../resources'
 
 /**
  * What the cloud commands can do on this machine, decided from GenOffice's
- * own settings without a network call: a Genspark login with cloud tools on,
- * or a BYOK key the user entered in Settings. Unkeyed fallbacks (DuckDuckGo)
- * do not count as configured. Agents check this once before planning work
- * that needs photos or web facts.
+ * own settings without a network call: a key the user entered in Settings for
+ * the chat / media / search backends. Unkeyed fallbacks (DuckDuckGo) do not
+ * count as configured. Agents check this once before planning work that needs
+ * photos or web facts.
  */
 export const capabilitiesCommand: CommandDef = {
   name: 'capabilities',
@@ -25,27 +24,24 @@ export const capabilitiesCommand: CommandDef = {
   async run(_args, ctx) {
     await prepareCloud(ctx.env)
     const settings = readAiSettingsFile(aiSettingsPath(ctx.env))
-    const gsk = hasGskAuth() && cloudToolsEnabled(settings)
     const searchProvider = activeSearchProvider(settings)
-    const keyedSearch = searchProvider !== 'genspark'
-    const search = gsk || keyedSearch
-    const imageSearch = gsk || searchProvider === 'serper'
-    const imageGeneration = imageGenerationAvailable(settings, hasGskAuth())
-    const mediaAnalysis = mediaAnalysisAvailable(settings, hasGskAuth())
-    const via = (byok: string | null | undefined) => (byok ? byok : gsk ? 'genspark' : null)
+    const search = searchProvider !== null
+    const imageSearch = searchProvider === 'serper'
+    const imageGeneration = imageGenerationAvailable(settings)
+    const mediaAnalysis = mediaAnalysisAvailable(settings)
     const detail = {
-      search: { available: search, via: keyedSearch ? searchProvider : gsk ? 'genspark' : null },
+      search: { available: search, via: searchProvider },
       image_search: {
         available: imageSearch,
-        via: searchProvider === 'serper' ? 'serper' : gsk ? 'genspark' : null,
+        via: imageSearch ? 'serper' : null,
       },
       image_generation: {
         available: imageGeneration,
-        via: imageGeneration ? via(activeMediaProvider(settings, 'image')) : null,
+        via: imageGeneration ? activeMediaProvider(settings, 'image') : null,
       },
       media_analysis: {
         available: mediaAnalysis,
-        via: mediaAnalysis ? via(activeMediaProvider(settings, 'analysis')) : null,
+        via: mediaAnalysis ? activeMediaProvider(settings, 'analysis') : null,
       },
       app: { available: appLaunch(ctx.env) !== null },
       settings_path: aiSettingsPath(ctx.env),

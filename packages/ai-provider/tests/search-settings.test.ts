@@ -5,16 +5,22 @@ import {
   defaultAiSearchSettings,
   resolveAiSearchSettings,
 } from '../src/search-settings'
+import type { AiSearchProviderId, AiSearchSettings } from '../src/types'
 
 describe('search settings', () => {
-  it('defaults to genspark with empty keys and rides along in defaultAiSettings', () => {
+  it('defaults to bocha with empty keys and rides along in defaultAiSettings', () => {
     expect(defaultAiSearchSettings()).toEqual({
-      provider: 'genspark',
-      providers: { serper: { apiKey: '' }, tavily: { apiKey: '' } },
+      provider: 'bocha',
+      providers: {
+        bocha: { apiKey: '' },
+        serper: { apiKey: '' },
+        tavily: { apiKey: '' },
+        custom: { apiKey: '', baseUrl: '' },
+      },
     })
-    expect(defaultAiSettings().search?.provider).toBe('genspark')
+    expect(defaultAiSettings().search?.provider).toBe('bocha')
     const resolved = resolveAiSettings(
-      { provider: 'genspark', providers: {} as never },
+      { provider: 'glm', providers: {} as never },
       defaultAiSettings(),
     )
     expect(resolved.search).toEqual(defaultAiSearchSettings())
@@ -30,34 +36,24 @@ describe('search settings', () => {
     expect(s.providers.serper.apiKey).toBe('')
   })
 
-  it('activates a BYOK search provider only with a key', () => {
-    expect(activeSearchProvider({ search: undefined })).toBe('genspark')
+  it('activates a search backend only when it can answer', () => {
+    const base = defaultAiSearchSettings()
+    const withProvider = (
+      provider: AiSearchProviderId,
+      patch: Partial<AiSearchSettings['providers'][AiSearchProviderId]>,
+    ): AiSearchSettings => ({
+      provider,
+      providers: { ...base.providers, [provider]: { apiKey: '', ...patch } },
+    })
+    expect(activeSearchProvider({ search: undefined })).toBeNull()
+    expect(activeSearchProvider({ search: withProvider('serper', {}) })).toBeNull()
+    expect(activeSearchProvider({ search: withProvider('serper', { apiKey: 'k' }) })).toBe('serper')
+    expect(activeSearchProvider({ search: withProvider('serper', { apiKey: '   ' }) })).toBeNull()
+    // a self-hosted endpoint is keyed by URL, not by an API key
+    expect(activeSearchProvider({ search: withProvider('custom', {}) })).toBeNull()
     expect(
-      activeSearchProvider({
-        search: {
-          provider: 'serper',
-          providers: { serper: { apiKey: '' }, tavily: { apiKey: '' } },
-        },
-      }),
-    ).toBe('genspark')
-    expect(
-      activeSearchProvider({
-        search: {
-          provider: 'serper',
-          providers: { serper: { apiKey: 'k' }, tavily: { apiKey: '' } },
-        },
-      }),
-    ).toBe('serper')
-    expect(
-      activeSearchProvider({
-        search: {
-          provider: 'serper',
-          providers: { serper: { apiKey: '   ' }, tavily: { apiKey: '' } },
-        },
-      }),
-    ).toBe('genspark')
-    expect(activeSearchProvider({ search: { provider: 'bing', providers: {} } as never })).toBe(
-      'genspark',
-    )
+      activeSearchProvider({ search: withProvider('custom', { baseUrl: 'https://sx.search' }) }),
+    ).toBe('custom')
+    expect(activeSearchProvider({ search: { provider: 'bing', providers: {} } as never })).toBeNull()
   })
 })

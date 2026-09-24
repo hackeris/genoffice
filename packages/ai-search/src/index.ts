@@ -1,9 +1,9 @@
 /**
- * Search utilities (main process) — gsk (Genspark CLI) first, then Serper Google API,
- * then Tavily, with DuckDuckGo as the keyless last resort. Runs in the main process
- * (Node fetch / child process) to avoid renderer CORS; the Serper key reuses SERPER_API_KEY,
- * the Tavily key reuses TAVILY_API_KEY.
- * For gsk auth see ./gsk.ts (`gsk login` or GSK_API_KEY).
+ * Search utilities (main process) — a user-configured backend (Bocha, Serper,
+ * Tavily, or a self-hosted endpoint) with DuckDuckGo as the keyless last
+ * resort. Runs in the main process (Node fetch) to avoid renderer CORS; the
+ * host keys reuse BOCHA_API_KEY / SERPER_API_KEY / TAVILY_API_KEY when the
+ * caller passes no per-call key.
  */
 
 import {
@@ -13,37 +13,45 @@ import {
   type ImageSearchResult,
   type WebSearchResult,
 } from './shared'
-import { gskImageSearch, gskWebSearch, hasGskAuth } from './gsk'
 
 export type { ImageSearchResult, WebSearchResult } from './shared'
+// Transitional: gsk / genoffice-auth are still exported for the account
+// surfaces (ai:gsk-status, cloud slides, cloud projects). The search and media
+// paths no longer route through them.
 export * from './gsk'
 export * from './genoffice-auth'
 export * from './media-tools'
 export * from './search-tools'
 
+const BOCHA_KEY = () => process.env.BOCHA_API_KEY ?? ''
 const SERPER_KEY = () => process.env.SERPER_API_KEY ?? ''
 const TAVILY_KEY = () => process.env.TAVILY_API_KEY ?? ''
 
 /**
- * Backend selection for one search. Keys default to the SERPER_API_KEY /
- * TAVILY_API_KEY env vars; settings-driven callers (search-tools.ts) pass the
- * user's key and turn gsk off so the chosen backend runs first.
+ * Backend selection for one search. Keys default to the BOCHA_API_KEY /
+ * SERPER_API_KEY / TAVILY_API_KEY env vars; settings-driven callers
+ * (search-tools.ts) pass the user's key so the chosen backend runs first.
  */
 export interface SearchOptions {
-  /** false = skip the Genspark backend (cloud tools off, or a BYOK search provider is active) */
-  useGsk?: boolean
+  bochaKey?: string
   serperKey?: string
   tavilyKey?: string
-  /** which keyed backend to try first (default serper) */
+  /** self-hosted endpoint (SearXNG & co.); an explicit choice, so it runs before the rest */
+  customUrl?: string
+  customKey?: string
+  /** which hosted backend to try first (default serper) */
   prefer?: 'serper' | 'tavily'
 }
 
+/** `boolean` is the legacy "cloud tools on/off" form; it no longer selects a backend */
 function normalizeOptions(opts: boolean | SearchOptions | undefined): Required<SearchOptions> {
-  const o = typeof opts === 'boolean' ? { useGsk: opts } : (opts ?? {})
+  const o = typeof opts === 'boolean' ? {} : (opts ?? {})
   return {
-    useGsk: o.useGsk ?? true,
+    bochaKey: o.bochaKey ?? BOCHA_KEY(),
     serperKey: o.serperKey ?? SERPER_KEY(),
     tavilyKey: o.tavilyKey ?? TAVILY_KEY(),
+    customUrl: o.customUrl ?? '',
+    customKey: o.customKey ?? '',
     prefer: o.prefer ?? 'serper',
   }
 }
@@ -53,6 +61,80 @@ type WebSearchResponse = {
   answer?: string
   method: string
   error?: string
+}
+
+/** Bocha (bochaai.com) web search; null when the key is empty, the call fails, or nothing comes back */
+async function bochaWebSearch(
+  key: string,
+  query: string,
+  maxResults: number,
+): Promise<WebSearchResponse | null> {
+  if (!key) return null
+  try {
+    const resp = await fetchWithTimeout('https://api.bochaai.com/v1/web-search', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, count: Math.min(maxResults, 50), freshness: 'noLimit' }),
+    })
+    if (!resp.ok) return null
+    const data = asRecord(await resp.json())
+    const webPages = asRecord(asRecord(data.data).webPages)
+    const raw: unknown[] = Array.isArray(webPages.value) ? webPages.value : []
+    const results: WebSearchResult[] = raw.slice(0, maxResults).map((item) => {
+      const o = asRecord(item)
+      return {
+        title: String(o.name ?? ''),
+        url: String(o.url ?? ''),
+        snippet: String(o.snippet ?? o.summary ?? ''),
+      }
+    })
+    if (!results.length) return null
+    return { results, method: 'bocha' }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Self-hosted search endpoint (SearXNG, or anything answering the same shape).
+ * Two response shapes are accepted, both `{ results: [...] }`:
+ *   SearXNG — `{ title, url, content }`;  minimal — `{ title, url, snippet }`.
+ */
+async function customWebSearch(
+  url: string,
+  key: string,
+  query: string,
+  maxResults: number,
+): Promise<WebSearchResponse | null> {
+  if (!url) return null
+  try {
+    const target = new URL(url)
+    target.searchParams.set('q', query)
+    // SearXNG only answers JSON when asked; endpoints that do not know the
+    // parameter ignore it.
+    if (!target.searchParams.has('format')) target.searchParams.set('format', 'json')
+    const resp = await fetchWithTimeout(target.toString(), {
+      headers: {
+        Accept: 'application/json',
+        ...(key ? { Authorization: `Bearer ${key}` } : {}),
+      },
+    })
+    if (!resp.ok) return null
+    const data = asRecord(await resp.json())
+    const raw: unknown[] = Array.isArray(data.results) ? data.results : []
+    const results: WebSearchResult[] = raw.slice(0, maxResults).map((item) => {
+      const o = asRecord(item)
+      return {
+        title: String(o.title ?? ''),
+        url: String(o.url ?? ''),
+        snippet: String(o.snippet ?? o.content ?? ''),
+      }
+    })
+    if (!results.length) return null
+    return { results, method: 'custom' }
+  } catch {
+    return null
+  }
 }
 
 /** Serper Google web search; null when the key is empty, the call fails, or nothing comes back */
@@ -139,26 +221,21 @@ export async function webSearch(
   options: boolean | SearchOptions = true,
 ): Promise<WebSearchResponse> {
   const o = normalizeOptions(options)
-  // useGsk=false: the user turned Genspark cloud tools off or picked their own
-  // search key — skip straight to the keyed/free backends
-  if (o.useGsk && hasGskAuth()) {
-    try {
-      const r = await gskWebSearch(query, maxResults)
-      if (r.results.length) return { ...r, method: 'gsk' }
-    } catch {
-      /* fall back to Serper/Tavily/DuckDuckGo */
-    }
-  }
-  const keyed =
-    o.prefer === 'tavily'
+  const keyed = [
+    // A custom endpoint is an explicit user choice, so it runs before the hosted APIs.
+    () => customWebSearch(o.customUrl, o.customKey, query, maxResults),
+    ...(o.prefer === 'tavily'
       ? [
           () => tavilyWebSearch(o.tavilyKey, query, maxResults),
+          () => bochaWebSearch(o.bochaKey, query, maxResults),
           () => serperWebSearch(o.serperKey, query, maxResults),
         ]
       : [
+          () => bochaWebSearch(o.bochaKey, query, maxResults),
           () => serperWebSearch(o.serperKey, query, maxResults),
           () => tavilyWebSearch(o.tavilyKey, query, maxResults),
-        ]
+        ]),
+  ]
   for (const attempt of keyed) {
     const r = await attempt()
     if (r) return r
@@ -183,14 +260,6 @@ export async function imageSearch(
   error?: string
 }> {
   const o = normalizeOptions(options)
-  if (o.useGsk && hasGskAuth()) {
-    try {
-      const images = await gskImageSearch(query, maxResults)
-      if (images.length) return { images, method: 'gsk' }
-    } catch {
-      /* fall back to Serper/DuckDuckGo */
-    }
-  }
   // Tavily has no image endpoint; Serper is the only keyed image backend
   const key = o.serperKey
   if (key) {

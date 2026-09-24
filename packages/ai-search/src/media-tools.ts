@@ -12,7 +12,6 @@ import { basename, extname } from 'node:path'
 import {
   activeMediaConfig,
   analyzeMediaWithProvider,
-  cloudToolsEnabled,
   defaultAiSettings,
   generateImageWithProvider,
   resolveAiSettings,
@@ -71,9 +70,8 @@ export function readAiSettingsFile(path: string): AiSettings {
 type Gate = { error: string } | null
 
 /** the Genspark route's preconditions; null when it may proceed */
-function gskGate(settings: AiSettings, notLoggedInError: string): Gate {
+function gskGate(notLoggedInError: string): Gate {
   if (!hasGskAuth()) return { error: notLoggedInError }
-  if (!cloudToolsEnabled(settings)) return { error: GSK_TOOLS_OFF_ERROR }
   return null
 }
 
@@ -147,7 +145,7 @@ export async function generateImageTool(
   const byok = activeMediaConfig(settings, 'image')
   try {
     if (!byok) {
-      const gate = gskGate(settings, options.notLoggedInError ?? GSK_NOT_LOGGED_IN_ERROR)
+      const gate = gskGate(options.notLoggedInError ?? GSK_NOT_LOGGED_IN_ERROR)
       if (gate) return gate
       const gen = await gskGenerateImage({ ...op, prompt })
       if (!op.transparentBackground || op.model === GSK_RMBG_MODEL) return { url: gen.url }
@@ -190,7 +188,7 @@ export async function analyzeMediaTool(
   const videoByok = activeMediaConfig(settings, 'video')
   try {
     const viaGsk = async () => {
-      const gate = gskGate(settings, options.notLoggedInError ?? GSK_NOT_LOGGED_IN_ERROR)
+      const gate = gskGate(options.notLoggedInError ?? GSK_NOT_LOGGED_IN_ERROR)
       if (gate) return gate
       return { text: await gskAnalyzeMedia({ mediaUrls, requirements }) }
     }
