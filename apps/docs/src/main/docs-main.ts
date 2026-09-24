@@ -116,9 +116,6 @@ import { startAiTrace } from '@genoffice/ai-provider/trace'
 import { listCustomModelsForIpc } from '@genoffice/ai-provider/custom-models'
 import {
   ensureGenofficeLogin,
-  noteGskCallFailure,
-  setGenofficeLoginOpener,
-  gskApiKey,
   generateImageTool,
   testSearchProvider,
   gskLoginInfo,
@@ -4027,18 +4024,10 @@ export function registerAiIpc(): void {
   app.once('before-quit', shutdownCodexAppServers)
   ipcMain.handle('ai:get-settings', async (): Promise<AiSettings> => {
     const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(SETTINGS_PATH(), {})
-    // pre-lock legacy file: genspark selected with cloud tools opted out. The
-    // settings UI locks the tools switch on with genspark and apps read this
-    // file live, so heal the stored flag once. Judged on the *stored* provider
-    // — never the activeProvider fallback below, which must not leak into the
-    // file and clobber a saved (half-configured) BYOK selection.
-    if ((stored.provider ?? 'genspark') === 'genspark' && stored.gskToolsEnabled === false) {
-      stored.gskToolsEnabled = true
-      writeJsonAtomic(SETTINGS_PATH(), stored)
-    }
     const settings = resolveAiSettings(stored, defaultAiSettings())
-    // a stored BYOK provider is honored when usable; half-filled configs fall back to genspark
-    settings.provider = activeProvider(settings)
+    // the stored selection is honored when usable; otherwise it stays as picked
+    // and the AI panels prompt for configuration
+    settings.provider = activeProvider(settings) ?? settings.provider
     return settings
   })
 
@@ -4052,9 +4041,6 @@ export function registerAiIpc(): void {
       return info?.email ? { loggedIn: true, email: info.email } : { loggedIn: true }
     },
   )
-
-  // a 401 on the gsk key opens the device-code login once (genoffice-auth recovery)
-  setGenofficeLoginOpener((url) => void shell.openExternal(url))
 
   ipcMain.handle('ai:gsk-login', () => {
     ensureGenofficeLogin((url) => void shell.openExternal(url))
@@ -4099,13 +4085,6 @@ export function registerAiIpc(): void {
     const maxTokens = request.maxTokens ?? maxOutputTokensOf(settings)
     const provider = settings.provider
     let config = settings.providers?.[provider]
-    // the genspark key never enters the settings file; requests take it from the gsk login state
-    // set only when the gsk key was injected: a 401 then means that key expired
-    let gskKey = ''
-    if (provider === 'genspark' && config && !config.apiKey) {
-      gskKey = gskApiKey()
-      config = { ...config, apiKey: gskKey }
-    }
     // a custom endpoint may name an environment variable instead of storing a key
     config = config ? resolveProfileCredential(config) : config
     const send = (chunk: AiStreamChunk) => {
@@ -4115,7 +4094,7 @@ export function registerAiIpc(): void {
       send({
         requestId,
         type: 'error',
-        error: provider === 'genspark' ? tm('errGskNotLoggedIn') : tm('errNoApiKey', { provider }),
+        error: tm('errNoApiKey', { provider }),
       })
       return
     }
@@ -4181,8 +4160,6 @@ export function registerAiIpc(): void {
       if (controller.signal.aborted) {
         send({ requestId, type: 'done' })
       } else {
-        // an expired/revoked key drops to signed-out so the inline sign-in button shows
-        noteGskCallFailure(gskKey, err)
         send({
           requestId,
           type: 'error',
@@ -4298,22 +4275,22 @@ export function registerAiIpc(): void {
   )
 
   ipcMain.handle('ai:search-test', (_event, input: unknown) => {
-    const { provider, apiKey } = (input ?? {}) as { provider?: AiSearchProviderId; apiKey?: string }
-    if (!provider || provider === 'genspark') {
-      return hasGskAuth() ? { ok: true } : { ok: false, error: tm('errGskNotLoggedIn') }
+    const { provider, apiKey, baseUrl } = (input ?? {}) as {
+      provider?: AiSearchProviderId
+      apiKey?: string
+      baseUrl?: string
     }
-    return testSearchProvider(provider, String(apiKey ?? ''))
+    if (!provider) return { ok: false, error: 'No search provider selected' }
+    return testSearchProvider(provider, String(apiKey ?? ''), baseUrl)
   })
 
-  // settings-UI connection test for the media provider (genspark = the gsk login state)
+  // settings-UI connection test for the media provider
   ipcMain.handle('ai:media-test', (_event, input: unknown) => {
     const { provider, config } = (input ?? {}) as {
       provider?: AiMediaProviderId
       config?: AiMediaProviderConfig
     }
-    if (!provider || provider === 'genspark') {
-      return hasGskAuth() ? { ok: true } : { ok: false, error: tm('errGskNotLoggedIn') }
-    }
+    if (!provider) return { ok: false, error: 'No media provider selected' }
     if (!config) return { ok: false, error: 'No media provider configuration' }
     return testMediaProvider(provider, config)
   })
@@ -4326,19 +4303,10 @@ export function registerAiIpc(): void {
     const { system, user } = request
     const provider = settings.provider
     let config = settings.providers?.[provider]
-    // set only when the gsk key was injected: a 401 then means that key expired
-    let gskKey = ''
-    if (provider === 'genspark' && config && !config.apiKey) {
-      gskKey = gskApiKey()
-      config = { ...config, apiKey: gskKey }
-    }
     // a custom endpoint may name an environment variable instead of storing a key
     config = config ? resolveProfileCredential(config) : config
     if (!config || (provider !== 'codex' && !config.apiKey)) {
-      return {
-        ok: false,
-        error: provider === 'genspark' ? tm('errGskNotLoggedIn') : tm('errNoApiKey', { provider }),
-      }
+      return { ok: false, error: tm('errNoApiKey', { provider }) }
     }
     if (provider !== 'codex' && !config.model) return { ok: false, error: tm('errNoModel') }
     try {

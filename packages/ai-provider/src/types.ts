@@ -1,7 +1,6 @@
 import type { AgentMessage, AgentToolCall, AgentToolDef } from '@genoffice/agent-core'
 
 export type AiProviderId =
-  | 'genspark'
   | 'codex'
   | 'anthropic'
   | 'gemini'
@@ -164,7 +163,6 @@ export interface AiProviderMeta {
 
 /** Image generation / media analysis backends (separate from the chat provider) */
 export type AiMediaProviderId =
-  | 'genspark'
   | 'openai'
   | 'gemini'
   | 'doubao'
@@ -197,7 +195,7 @@ export interface AiMediaProviderMeta {
   description: string
   keyPlaceholder: string
   needsBaseUrl?: boolean
-  /** '' for genspark (gsk login) and custom (user-supplied) */
+  /** '' for custom (user-supplied) */
   defaultBaseUrl: string
   /** absent = the provider does not generate images */
   imageProtocol?: AiImageProtocol
@@ -223,9 +221,9 @@ export interface AiMediaSettings {
   provider?: AiMediaProviderId | undefined
 }
 
-/** web/image search backends; Parallel supports both a user key and free keyless search */
+/** web/image search backends; bocha/custom are BYOK, the rest hosted key-based APIs */
 export type AiSearchProviderId =
-  'genspark' | 'serper' | 'serply' | 'tavily' | 'parallel' | 'exa' | 'firecrawl'
+  'bocha' | 'serper' | 'serply' | 'tavily' | 'parallel' | 'exa' | 'firecrawl' | 'custom'
 
 export interface AiSearchProviderMeta {
   id: AiSearchProviderId
@@ -233,11 +231,13 @@ export interface AiSearchProviderMeta {
   keyPlaceholder: string
   /** the backend also serves image search (otherwise image search falls back to free sources) */
   imageSearch: boolean
+  /** custom only: placeholder for the user-supplied search endpoint URL */
+  baseUrlPlaceholder?: string
 }
 
 export interface AiSearchSettings {
   provider: AiSearchProviderId
-  providers: Record<Exclude<AiSearchProviderId, 'genspark'>, { apiKey: string }>
+  providers: Record<AiSearchProviderId, { apiKey: string; baseUrl?: string | undefined }>
 }
 
 export interface AiSettings {
@@ -247,21 +247,10 @@ export interface AiSettings {
   customEndpoints?: AiCustomEndpoint[] | undefined
   /** id of the endpoint `providers.custom` mirrors */
   customEndpoint?: string | undefined
-  /**
-   * Provider for generate_image / analyze_media. Absent (pre-media settings
-   * files) means Genspark, i.e. the gsk login + gskToolsEnabled gate.
-   */
+  /** Provider for generate_image / analyze_media. Absent means the package default. */
   media?: AiMediaSettings | undefined
-  /** web/image search backend; absent means Genspark (gsk when signed in, then the free chain) */
+  /** web/image search backend; absent means the package default */
   search?: AiSearchSettings | undefined
-  /**
-   * Genspark cloud tools (web/image search via gsk, image generation, media
-   * analysis). Default true; false makes tools skip the gsk backend entirely
-   * (search falls back to free sources, gsk-only tools are unavailable).
-   * Only meaningful while signed in — signed out, the gsk backend is
-   * unavailable regardless.
-   */
-  gskToolsEnabled?: boolean
   /**
    * Output-token cap for ONE model turn of agent runs (default
    * DEFAULT_MAX_OUTPUT_TOKENS). Reasoning models bill their thinking against

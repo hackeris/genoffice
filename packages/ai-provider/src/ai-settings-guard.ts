@@ -203,7 +203,6 @@ export function sanitizeAiSettings(input: unknown): AiSettings | null {
     provider: provider as AiProviderId,
     providers,
   }
-  if (typeof raw.gskToolsEnabled === 'boolean') settings.gskToolsEnabled = raw.gskToolsEnabled
   const customEndpoints = sanitizeCustomEndpoints(raw.customEndpoints)
   if (customEndpoints.length > 0) {
     settings.customEndpoints = customEndpoints

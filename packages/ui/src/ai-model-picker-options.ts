@@ -59,12 +59,9 @@ export function aiModelPickerGroups(input: AiSettings, gskLoggedIn: boolean): Ai
     const stored = config?.model?.trim() ?? ''
     // CLI vendors pass activeProvider unconfigured (the binary auto-discovers);
     // list them only once the settings page holds a model or a path
-    const usable =
-      meta.id === 'genspark'
-        ? gskLoggedIn
-        : meta.needsCliPath
-          ? Boolean(stored || config?.cliPath?.trim())
-          : activeProvider({ ...settings, provider: meta.id }) === meta.id
+    const usable = meta.needsCliPath
+      ? Boolean(stored || config?.cliPath?.trim())
+      : activeProvider({ ...settings, provider: meta.id }) === meta.id
     if (!usable) continue
     const models = stored && !meta.models.includes(stored) ? [stored, ...meta.models] : meta.models
     if (models.length === 0 && !meta.needsCliPath) continue

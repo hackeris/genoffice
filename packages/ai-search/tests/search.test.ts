@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { webSearch, imageSearch } from '../src/index'
 import { searchOptionsFromSettings, testSearchProvider } from '../src/search-tools'
-import { defaultAiSettings } from '@genoffice/ai-provider'
-
-// These cases only test the Serper/DuckDuckGo paths; a local gsk login would take priority, so disable it explicitly
-beforeAll(() => {
-  process.env.AI_SEARCH_DISABLE_GSK = '1'
-})
+import {
+  defaultAiSettings,
+  type AiSearchProviderId,
+  type AiSearchSettings,
+  type AiSettings,
+} from '@genoffice/ai-provider'
 
 const realFetch = globalThis.fetch
 afterEach(() => {
@@ -368,7 +368,7 @@ describe('webSearch (SearchOptions)', () => {
       seen.push(String((init?.headers as Record<string, string>)['X-API-KEY']))
       return { ok: true, json: { organic: [{ title: 'A', link: 'https://a.com', snippet: 's' }] } }
     })
-    const r = await webSearch('q', 3, { useGsk: false, serperKey: 'user-key' })
+    const r = await webSearch('q', 3, { serperKey: 'user-key' })
     expect(r.method).toBe('serper')
     expect(seen).toEqual(['user-key'])
   })
@@ -380,7 +380,6 @@ describe('webSearch (SearchOptions)', () => {
       return { ok: true, json: { results: [{ title: 'T', url: 'https://t.com', content: 'c' }] } }
     })
     const r = await webSearch('q', 3, {
-      useGsk: false,
       tavilyKey: 'tv',
       serperKey: 'sp',
       prefer: 'tavily',
@@ -481,94 +480,53 @@ describe('webSearch (Firecrawl)', () => {
 describe('search-tools', () => {
   it('maps the settings block onto SearchOptions', () => {
     const base = defaultAiSettings()
-    expect(searchOptionsFromSettings(base)).toEqual({ useGsk: true })
-    expect(searchOptionsFromSettings({ ...base, gskToolsEnabled: false })).toEqual({
-      useGsk: false,
+    // nothing configured → empty options; the env keys and the free chain still apply
+    expect(searchOptionsFromSettings(base)).toEqual({})
+    const withSearch = (
+      provider: AiSearchProviderId,
+      patch: Partial<AiSearchSettings['providers'][AiSearchProviderId]>,
+    ): AiSettings => ({
+      ...base,
+      search: {
+        provider,
+        providers: { ...base.search!.providers, [provider]: { apiKey: '', ...patch } },
+      },
     })
-    const serper = {
-      ...base,
-      search: {
-        provider: 'serper' as const,
-        providers: {
-          serper: { apiKey: 'k' },
-          serply: { apiKey: '' },
-          tavily: { apiKey: '' },
-          parallel: { apiKey: '' },
-          exa: { apiKey: '' },
-          firecrawl: { apiKey: '' },
-        },
-      },
-    }
-    expect(searchOptionsFromSettings(serper)).toEqual({ useGsk: false, serperKey: 'k' })
-    const tavily = {
-      ...base,
-      search: {
-        provider: 'tavily' as const,
-        providers: {
-          serper: { apiKey: '' },
-          serply: { apiKey: '' },
-          tavily: { apiKey: 't' },
-          parallel: { apiKey: '' },
-          exa: { apiKey: '' },
-          firecrawl: { apiKey: '' },
-        },
-      },
-    }
-    expect(searchOptionsFromSettings(tavily)).toEqual({
-      useGsk: false,
+    expect(searchOptionsFromSettings(withSearch('bocha', { apiKey: 'b' }))).toEqual({
+      bochaKey: 'b',
+      prefer: 'bocha',
+    })
+    expect(searchOptionsFromSettings(withSearch('serper', { apiKey: 'k' }))).toEqual({
+      serperKey: 'k',
+    })
+    expect(searchOptionsFromSettings(withSearch('tavily', { apiKey: 't' }))).toEqual({
       tavilyKey: 't',
       prefer: 'tavily',
     })
-    const exa = {
-      ...base,
-      search: {
-        provider: 'exa' as const,
-        providers: {
-          serper: { apiKey: '' },
-          serply: { apiKey: '' },
-          tavily: { apiKey: '' },
-          parallel: { apiKey: '' },
-          exa: { apiKey: 'e' },
-          firecrawl: { apiKey: '' },
-        },
-      },
-    }
-    expect(searchOptionsFromSettings(exa)).toEqual({ useGsk: false, exaKey: 'e', prefer: 'exa' })
-    const firecrawl = {
-      ...base,
-      search: {
-        provider: 'firecrawl' as const,
-        providers: {
-          serper: { apiKey: '' },
-          serply: { apiKey: '' },
-          tavily: { apiKey: '' },
-          parallel: { apiKey: '' },
-          exa: { apiKey: '' },
-          firecrawl: { apiKey: 'fc-1' },
-        },
-      },
-    }
-    expect(searchOptionsFromSettings(firecrawl)).toEqual({
-      useGsk: false,
+    expect(searchOptionsFromSettings(withSearch('serply', { apiKey: 's' }))).toEqual({
+      serplyKey: 's',
+      prefer: 'serply',
+    })
+    expect(searchOptionsFromSettings(withSearch('parallel', { apiKey: 'p' }))).toEqual({
+      parallelKey: 'p',
+      prefer: 'parallel',
+    })
+    expect(searchOptionsFromSettings(withSearch('exa', { apiKey: 'e' }))).toEqual({
+      exaKey: 'e',
+      prefer: 'exa',
+    })
+    expect(searchOptionsFromSettings(withSearch('firecrawl', { apiKey: 'fc-1' }))).toEqual({
       firecrawlKey: 'fc-1',
       prefer: 'firecrawl',
     })
-    // no key → genspark chain
-    const empty = {
-      ...base,
-      search: {
-        provider: 'serper' as const,
-        providers: {
-          serper: { apiKey: '' },
-          serply: { apiKey: '' },
-          tavily: { apiKey: '' },
-          parallel: { apiKey: '' },
-          exa: { apiKey: '' },
-          firecrawl: { apiKey: '' },
-        },
-      },
-    }
-    expect(searchOptionsFromSettings(empty)).toEqual({ useGsk: true })
+    // a self-hosted endpoint needs no key; its URL alone makes it active
+    expect(
+      searchOptionsFromSettings(
+        withSearch('custom', { baseUrl: 'https://sx.example/search' }),
+      ),
+    ).toEqual({ customUrl: 'https://sx.example/search', customKey: '' })
+    // a blank key leaves the backend inactive
+    expect(searchOptionsFromSettings(withSearch('serper', { apiKey: '' }))).toEqual({})
   })
 
   it('reports a rejected key as a failure instead of the silent free fallback', async () => {

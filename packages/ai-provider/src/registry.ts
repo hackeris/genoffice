@@ -1,6 +1,6 @@
 import { ANTHROPIC_BASE_URL } from './protocols/anthropic'
 import { GEMINI_BASE_URL } from './protocols/gemini'
-import { AI_PROVIDERS, DEEPSEEK_V41_FLASH, GENSPARK_LLM_BASE_URLS } from './providers'
+import { AI_PROVIDERS, DEEPSEEK_V41_FLASH } from './providers'
 import {
   customProtocolBaseUrl,
   normalizeCustomProfile,
@@ -18,8 +18,8 @@ export { modelEchoesReasoning, modelHasFixedSampling, modelLacksVision } from '.
 export type AiProtocol = 'anthropic' | 'gemini' | 'openai-compatible' | 'codex-app-server'
 
 export interface ProviderCapabilities {
-  /** How the provider authenticates: app login, user key, or the Codex CLI's existing login. */
-  auth: 'gsk-login' | 'api-key' | 'codex-chatgpt'
+  /** How the provider authenticates: user key, or the Codex CLI's existing login. */
+  auth: 'api-key' | 'codex-chatgpt'
   /** chat models accept image input (declarative; for custom endpoints it is assumed, not known) */
   vision: boolean
 }
@@ -120,23 +120,6 @@ function fixedEndpoint(
 }
 
 export const AI_PROVIDER_ADAPTERS: Record<AiProviderId, ProviderAdapter> = {
-  genspark: {
-    meta: metaOf('genspark'),
-    capabilities: { auth: 'gsk-login', vision: true },
-    // Route by model id prefix: claude uses the Anthropic protocol (preserves image
-    // input fidelity), the rest OpenAI-compatible. The proxy's gemini endpoint was
-    // removed server-side (405 as of 2026-08-31) along with its gemini models.
-    resolveEndpoint(config) {
-      if (config.model.startsWith('claude')) {
-        return { protocol: 'anthropic', baseUrl: GENSPARK_LLM_BASE_URLS.anthropic }
-      }
-      return {
-        protocol: 'openai-compatible',
-        baseUrl: GENSPARK_LLM_BASE_URLS.openai,
-        ...(modelHasFixedSampling(config.model) ? { omitTemperature: true } : {}),
-      }
-    },
-  },
   codex: {
     meta: metaOf('codex'),
     capabilities: { auth: 'codex-chatgpt', vision: true },
@@ -170,7 +153,7 @@ export const AI_PROVIDER_ADAPTERS: Record<AiProviderId, ProviderAdapter> = {
     meta: metaOf('openai'),
     capabilities: { auth: 'api-key', vision: true },
     // every current OpenAI model accepts the renamed field, so it is safe endpoint-wide;
-    // other openai-compatible vendors (and the LiteLLM-backed Genspark proxy) still expect `max_tokens`
+    // other openai-compatible vendors still expect `max_tokens`
     resolveEndpoint: fixedEndpoint('openai-compatible', 'https://api.openai.com/v1', {
       useMaxCompletionTokens: true,
     }),
