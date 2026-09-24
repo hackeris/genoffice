@@ -31,20 +31,11 @@ import {
   type AiSettings,
   type AiStreamChunk,
   type AiStreamRequest,
-  type GenSparkAccountStatus,
   type LegacyAiSettings,
 } from '@genoffice/ai-provider'
 import { shutdownCodexAppServers } from '@genoffice/ai-provider/codex-app-server'
 import { fetchRemoteImage } from '@genoffice/electron-utils'
-import {
-  webSearchTool,
-  imageSearchTool,
-  ensureGenofficeLogin,
-  generateImageTool,
-  analyzeMediaTool,
-  gskLoginInfo,
-  hasGskAuth,
-} from '@genoffice/ai-search'
+import { webSearchTool, imageSearchTool, generateImageTool, analyzeMediaTool } from '@genoffice/ai-search'
 import { addPicture, editPictureSrcRect, replacePictureBytes } from '@genoffice/pptx-engine'
 import { matchesElementRef } from '@genoffice/pptx-engine/identity'
 import { coverCropFractions } from '@genoffice/pipelines/slides'
@@ -113,21 +104,6 @@ export function registerAiIpc(): void {
     // and the AI panels prompt for configuration
     settings.provider = activeProvider(settings) ?? settings.provider
     return settings
-  })
-
-  // Genspark account (gsk login state): the auth source for AI features; when logged out the frontend uses this to guide login
-  ipcMain.handle(
-    'ai:gsk-status',
-    async (_event, withEmail?: boolean): Promise<GenSparkAccountStatus> => {
-      if (!hasGskAuth()) return { loggedIn: false }
-      if (!withEmail) return { loggedIn: true }
-      const info = await gskLoginInfo()
-      return info?.email ? { loggedIn: true, email: info.email } : { loggedIn: true }
-    },
-  )
-
-  ipcMain.handle('ai:gsk-login', () => {
-    ensureGenofficeLogin((url) => void shell.openExternal(url))
   })
 
   ipcMain.handle('ai:set-settings', (_event, settings: AiSettings) => {
@@ -275,7 +251,7 @@ export function registerSlidesOnlyAiIpc(): void {
           imageSize: op.imageSize ? String(op.imageSize) : undefined,
           transparentBackground: op.transparentBackground === true,
         },
-        { notLoggedInError: tm('errGskCli') },
+        { notConfiguredError: tm('errAiProviderUnset') },
       )
     },
   )
@@ -289,7 +265,7 @@ export function registerSlidesOnlyAiIpc(): void {
           mediaUrls: (op.mediaUrls ?? []).map(String),
           requirements: String(op.requirements ?? ''),
         },
-        { notLoggedInError: tm('errGskCli') },
+        { notConfiguredError: tm('errAiProviderUnset') },
       )
     },
   )

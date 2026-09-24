@@ -1,4 +1,4 @@
-/** Search result types and shared constants (used by both the index and gsk backends) */
+/** Search result types and shared constants used by the search backends */
 
 export interface WebSearchResult {
   title: string
@@ -55,13 +55,12 @@ let explicitProxyUrl = ''
 
 /**
  * Proxy resolved by the apps' proxy bootstraps (env vars, else the system
- * proxy via session.resolveProxy); consumed by gskChildEnv() and the login
- * flow's proxy fallback.
+ * proxy via session.resolveProxy); consumed by the outbound AI request paths.
  */
-export function setGskProxyUrl(url: string): void {
+export function setAiProxyUrl(url: string): void {
   explicitProxyUrl = url
 }
 
-export function gskProxyUrl(): string {
+export function aiProxyUrl(): string {
   return explicitProxyUrl
 }

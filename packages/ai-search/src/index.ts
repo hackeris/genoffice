@@ -15,11 +15,7 @@ import {
 } from './shared'
 
 export type { ImageSearchResult, WebSearchResult } from './shared'
-// Transitional: gsk / genoffice-auth are still exported for the account
-// surfaces (ai:gsk-status, cloud slides, cloud projects). The search and media
-// paths no longer route through them.
-export * from './gsk'
-export * from './genoffice-auth'
+export { setAiProxyUrl, aiProxyUrl } from './shared'
 export * from './media-tools'
 export * from './search-tools'
 

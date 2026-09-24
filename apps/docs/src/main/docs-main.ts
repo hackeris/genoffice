@@ -100,11 +100,8 @@ import {
 } from '@genoffice/ai-provider'
 import { listCodexModels, shutdownCodexAppServers } from '@genoffice/ai-provider/codex-app-server'
 import {
-  ensureGenofficeLogin,
   generateImageTool,
   testSearchProvider,
-  gskLoginInfo,
-  hasGskAuth,
   webSearchTool,
   imageSearchTool,
 } from '@genoffice/ai-search'
@@ -2884,21 +2881,6 @@ export function registerAiIpc(): void {
     // and the AI panels prompt for configuration
     settings.provider = activeProvider(settings) ?? settings.provider
     return settings
-  })
-
-  // Genspark account (gsk login state): auth source for AI features; the frontend uses it to prompt login when logged out
-  ipcMain.handle(
-    'ai:gsk-status',
-    async (_event, withEmail?: boolean): Promise<GenSparkAccountStatus> => {
-      if (!hasGskAuth()) return { loggedIn: false }
-      if (!withEmail) return { loggedIn: true }
-      const info = await gskLoginInfo()
-      return info?.email ? { loggedIn: true, email: info.email } : { loggedIn: true }
-    },
-  )
-
-  ipcMain.handle('ai:gsk-login', () => {
-    ensureGenofficeLogin((url) => void shell.openExternal(url))
   })
 
   ipcMain.handle('ai:set-settings', (_event, settings: AiSettings) => {
