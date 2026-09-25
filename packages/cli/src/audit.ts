@@ -24,7 +24,7 @@ export function auditLogPath(env: NodeJS.ProcessEnv): string | null {
   const raw = env.GENOFFICE_AUDIT_LOG?.trim()
   if (raw?.toLowerCase() === 'off') return null
   if (raw) return raw
-  return join(env.GENOFFICE_AUTH_DIR || join(homedir(), '.genoffice'), 'cli-audit.jsonl')
+  return join(env.GENOFFICE_AUTH_DIR || join(homedir(), '.sotaoffice'), 'cli-audit.jsonl')
 }
 
 export function appendAudit(env: NodeJS.ProcessEnv, record: AuditRecord): void {

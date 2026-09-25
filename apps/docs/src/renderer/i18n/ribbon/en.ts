@@ -136,7 +136,7 @@ export const en = {
   ribbonStylePaneTip: 'Styles pane: browse all styles, create or update styles from the selection',
   ribbonMoreStyles: 'More styles',
   ribbonGroupStyles: 'Styles',
-  ribbonAiAssistant: 'Genspark',
+  ribbonAiAssistant: 'AI',
   ribbonAiAssistantTip: 'Open the AI assistant',
   ribbonRemoveTableStyleTip: 'Remove table style',
   ribbonNoStyle: 'No Style',

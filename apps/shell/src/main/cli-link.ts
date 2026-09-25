@@ -55,7 +55,7 @@ export function isEphemeralInstall(resourcesPath: string, env: NodeJS.ProcessEnv
 
 /** Same directory the genoffice CLI uses for auth.json and its audit log. */
 export function launcherFilePath(env: NodeJS.ProcessEnv): string {
-  return join(env.GENOFFICE_AUTH_DIR || join(homedir(), '.genoffice'), 'launcher')
+  return join(env.GENOFFICE_AUTH_DIR || join(homedir(), '.sotaoffice'), 'launcher')
 }
 
 /** One line, the directory holding genoffice / genoffice.cmd; rewritten only when it changed. */

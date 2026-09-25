@@ -5,7 +5,6 @@ export const fr = {
   aiEmptyBuildTitle: "Laissez l'IA construire ce classeur pour vous",
   aiEmptyBuildBody:
     "Décrivez le tableau, les données ou le graphique voulu — l'IA les crée directement.",
-  aiGskLoginBtn: 'Se connecter à Genspark',
   aiUndelivered: 'Non envoyé',
   aiRetry: 'Réessayer',
   aiOpenAssistant: "Ouvrir l'assistant IA",
@@ -50,13 +49,10 @@ export const fr = {
   aiFileTooltip:
     "SHA-256 {sha}\nL'enregistrement ne réécrit que les entrées modifiées ; tout le reste est conservé.",
   aiFileMeta: '{sheets} feuilles · {entries} entrées',
-  aiGensparkAccount: 'Compte Genspark',
   aiAccountChecking: 'Vérification…',
   aiLoggedIn: 'Connecté',
   aiLoggedInAs: 'Connecté : {email}',
-  aiNotLoggedIn: 'Non connecté (les fonctions IA nécessitent un compte Genspark)',
   aiWaitingBrowserLogin: 'En attente de la connexion dans le navigateur…',
-  aiLoginGenspark: 'Se connecter à Genspark',
   aiModel: 'Modèle',
   aiCancel: 'Annuler',
   aiSave: 'Enregistrer',
@@ -66,8 +62,6 @@ export const fr = {
   aiOverloadedError: "Le service d'IA est actuellement surchargé — réessayez dans un instant",
   aiNetworkError:
     'Problème réseau : impossible de joindre le service IA. Vérifiez votre connexion et réessayez',
-  aiCreditsExhausted:
-    'Vos crédits Genspark sont épuisés. Rechargez sur genspark.ai/pricing puis réessayez',
   aiToolWorkbookContext: 'Lire les informations du classeur',
   aiToolReadRange: 'Lire la plage',
   aiToolReadRangeOf: 'Lire la plage {range}',

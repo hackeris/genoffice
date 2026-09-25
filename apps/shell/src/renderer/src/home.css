@@ -651,7 +651,8 @@ body.vib .home {
 .recent-columns,
 .recent-item {
   display: grid;
-  grid-template-columns: 18px 24px minmax(0, 1fr) 120px 110px 76px 24px 28px;
+  /* 末尾的 24px 星标列已随收藏入口一起从 UI 移除（鸿蒙沙箱下最近/收藏路径易失效） */
+  grid-template-columns: 18px 24px minmax(0, 1fr) 120px 110px 76px 28px;
   align-items: center;
   gap: 12px;
   padding: 0 16px;
