@@ -105,14 +105,6 @@ const CHANNEL_OPTIONS = [
   { value: 'beta', labelKey: 'channelBeta' },
 ] as const satisfies readonly { value: 'stable' | 'beta'; labelKey: StringKey }[]
 
-/** GitHub-style abbreviated stargazer count (2591 → "2.6k") — the number is
- * social proof, not a metric; the cached/exact value would only look stale */
-function formatStars(n: number): string {
-  if (n < 1000) return String(n)
-  const k = n / 1000
-  return `${k >= 100 ? Math.round(k) : (Math.round(k * 10) / 10).toString().replace(/\.0$/, '')}k`
-}
-
 /** px stepper for the custom AI panel text size; in-range values apply live,
  * out-of-range or partial input is clamped on blur */
 function CustomFontSizeInput({
@@ -962,13 +954,26 @@ function AiModelPane({ t }: { t: TFunc }) {
           onBlur={commitMaxTokens}
         />
       </div>
-      <div className="set-field">
-        <div className="set-field-text">
-          <div className="set-field-stack">
-            <div className="set-field-label">{t('setAiGskTools')}</div>
-            <div className="set-field-desc">{t('setAiGskToolsDesc')}</div>
-          </div>
-        </div>
+      <div className="set-pane-footer">
+        <AiStatusPill
+          status={
+            testing
+              ? { kind: 'testing', text: t('setAiTesting') }
+              : testResult
+                ? testResult.ok
+                  ? { kind: 'ok', text: t('setAiTestOk') }
+                  : { kind: 'err', text: testResult.error || t('setAiTestFail') }
+                : saved
+                  ? { kind: 'ok', text: t('setAiSaved') }
+                  : null
+          }
+        />
+        <button className="set-btn" disabled={testing} onClick={test}>
+          {t('setAiTest')}
+        </button>
+        <button className="set-btn primary" disabled={!dirty} onClick={save}>
+          {t('setAiSave')}
+        </button>
       </div>
     </>
   )
@@ -1659,8 +1664,6 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const [authorName, setAuthorName] = useState<AuthorNameSetting>({ value: '', fallback: '' })
   const [channel, setChannel] = useState<'stable' | 'beta'>('stable')
   const [appVersion, setAppVersion] = useState('')
-  const [githubStars, setGithubStars] = useState<number | null>(null)
-  const [updateState, setUpdateState] = useState<UpdateUiState | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -1690,18 +1693,6 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     })
     void window.aiOffice.getAppVersion?.().then((v) => {
       if (alive && v) setAppVersion(v)
-    })
-    // a rejected invoke (main process not ready, a shell whose preload does
-    // not expose the channel) must not surface as an unhandled rejection;
-    // without a known state the About row simply stays hidden
-    void window.aiOffice
-      .getUpdateState?.()
-      .then((s) => {
-        if (alive) setUpdateState(s)
-      })
-      .catch(() => undefined)
-    void window.aiOffice.githubStars?.().then((n) => {
-      if (alive && n !== null) setGithubStars(n)
     })
     return () => {
       alive = false
@@ -2007,26 +1998,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               <>
                 <h3 className="set-pane-title">{t('setSecAbout')}</h3>
                 <Field label={t('versionLabel')} value={appVersion || '—'} />
-                {updateState && (
-                  <div className="set-field">
-                    <div className="set-field-text">
-                      <label className="set-field-label">{t('setUpdateAvailableLabel')}</label>
-                    </div>
-                    <button
-                      type="button"
-                      className="set-update-btn"
-                      onClick={() => void window.aiOffice.openUpdateDialog?.()}
-                    >
-                      {updateState.phase === 'downloading'
-                        ? t('setUpdateDownloading', {
-                            percent: Math.round(updateState.percent),
-                          })
-                        : updateState.phase === 'downloaded'
-                          ? t('setUpdateRestart')
-                          : t('setUpdateTo', { version: updateState.version })}
-                    </button>
-                  </div>
-                )}
+                {/* 更新通道在鸿蒙分发下无意义，先隐藏；代码保留，恢复时去掉本包裹即可 */}
+                {false && (
                 <div className="set-field">
                   <div className="set-field-text">
                     <label className="set-field-label">{t('updateChannel')}</label>
@@ -2046,22 +2019,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                     }}
                   />
                 </div>
-                <Field
-                  label={t('setGithub')}
-                  value={
-                    githubStars === null
-                      ? 'github.com/genspark-ai/genoffice'
-                      : `github.com/genspark-ai/genoffice · ★ ${formatStars(githubStars)}`
-                  }
-                  action={
-                    <button
-                      className="set-btn"
-                      onClick={() => void window.aiOffice.openGitHubRepo?.()}
-                    >
-                      {t('starOnGitHub')}
-                    </button>
-                  }
-                />
+                )}
               </>
             )}
           </div>
