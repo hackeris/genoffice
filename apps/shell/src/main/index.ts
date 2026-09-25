@@ -2688,6 +2688,16 @@ function createShellWindow(): void {
   } else {
     void win.loadFile(join(__dirname, '../renderer/index.html'))
   }
+  // OHOS:主界面加载完成后落 ui-ready 标记(el2/files,cwd 即该目录)。
+  // EntryAbility 轮询到它再延迟 2s 申请三目录权限——启动即弹授权框会盖在
+  // 尚未加载的白屏上,拖慢首屏。写失败不阻塞 UI,ArkTS 侧轮询超时跳过本轮。
+  win.webContents.once('did-finish-load', () => {
+    try {
+      writeFileSync('/data/storage/el2/base/files/ui-ready', String(Date.now()))
+    } catch {
+      // 非 OHOS 环境(开发机)写不进,忽略
+    }
+  })
 }
 
 // ---- routing: one dispatch function for every open path ----
