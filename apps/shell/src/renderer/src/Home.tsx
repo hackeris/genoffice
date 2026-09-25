@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { DragEvent as ReactDragEvent, ReactElement } from 'react'
-import logoLockup from './assets/genoffice-logo.svg'
 import iconDocx from './assets/file-docx.svg'
 import iconXlsx from './assets/file-xlsx.svg'
 import iconPptx from './assets/file-pptx.svg'
@@ -655,13 +654,14 @@ function SettingsEntry() {
         aria-label={t('settings')}
       >
         <span className="account-avatar">
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="8" cy="8" r="2.2" stroke="currentColor" strokeWidth="1.3" />
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
             <path
-              d="M8 1.6v1.7M8 12.7v1.7M1.6 8h1.7M12.7 8h1.7M3.5 3.5l1.2 1.2M11.3 11.3l1.2 1.2M12.5 3.5l-1.2 1.2M4.7 11.3l-1.2 1.2"
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
               stroke="currentColor"
-              strokeWidth="1.3"
+              strokeWidth="2"
               strokeLinecap="round"
+              strokeLinejoin="round"
             />
           </svg>
         </span>
@@ -1698,24 +1698,6 @@ export function Home() {
             {entry.missing ? '—' : formatModified(entry.mtimeMs, i18n)}
           </span>
           <span className="recent-size">{entry.missing ? '—' : formatSize(entry.sizeBytes)}</span>
-          <button
-            className={`star-btn${entry.starred ? ' starred' : ''}`}
-            aria-label={entry.starred ? t('unstar') : t('star')}
-            onClick={(event) => {
-              event.stopPropagation()
-              toggleStar(entry.path)
-            }}
-          >
-            <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
-              <path
-                d="M8 1.9l1.9 3.85 4.25.62-3.07 3 .72 4.23L8 11.6l-3.8 2 .72-4.23-3.07-3 4.25-.62z"
-                fill={entry.starred ? '#f5a623' : 'none'}
-                stroke={entry.starred ? '#f5a623' : 'currentColor'}
-                strokeWidth="1.2"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
           <span
             className="recent-actions"
             ref={rowMenu === entry.path ? rowMenuWrapRef : undefined}
@@ -2040,7 +2022,6 @@ export function Home() {
                 {renderModifiedHeader()}
                 <span className="col-size">{t('colSize')}</span>
                 <span />
-                <span />
               </div>
               <ul className="recent-list">
                 {folderSubfolders.map((entry) => renderSubfolderRow(entry))}
@@ -2080,6 +2061,8 @@ export function Home() {
           {renderQuickCards()}
         </section>
 
+        {/* 鸿蒙沙箱下最近/收藏路径易失效，最近文件区块先整体隐藏；代码保留，恢复时去掉本包裹即可 */}
+        {false && (
         <section
           className="recents"
           aria-label={view === 'recent' ? t('secRecent') : t('secStarred')}
@@ -2122,9 +2105,6 @@ export function Home() {
               </div>
             )}
             <div className="recents-heading">
-              <span className="section-label">
-                {view === 'recent' ? t('secRecent') : t('secStarred')}
-              </span>
               <span className="file-count">{t(fileCountKey(listTotal), { n: listTotal })}</span>
             </div>
           </div>
@@ -2153,7 +2133,6 @@ export function Home() {
                 {renderModifiedHeader()}
                 <span className="col-size">{t('colSize')}</span>
                 <span />
-                <span />
               </div>
               <ul className="recent-list">
                 {(fileSort === 'oldest' ? [...entries].reverse() : entries).map((entry) =>
@@ -2168,6 +2147,7 @@ export function Home() {
             </div>
           )}
         </section>
+        )}
       </main>
     )
   }
@@ -2183,42 +2163,6 @@ export function Home() {
   return (
     <div className="home">
       <aside className="sidebar">
-        <div className="sidebar-logo">
-          <img className="logo-lockup" src={logoLockup} alt="GenOffice" />
-        </div>
-        <nav className="sidebar-nav">
-          <button
-            className={`nav-item${view === 'recent' && !selectedFolder ? ' active' : ''}`}
-            onClick={() => changeView('recent')}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.3" />
-              <path
-                d="M8 4.8V8l2.2 1.6"
-                stroke="currentColor"
-                strokeWidth="1.3"
-                strokeLinecap="round"
-              />
-            </svg>
-            <span className="nav-label">{t('navRecent')}</span>
-            <span className="nav-count">{navCounts.recent}</span>
-          </button>
-          <button
-            className={`nav-item${view === 'starred' && !selectedFolder ? ' active' : ''}`}
-            onClick={() => changeView('starred')}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path
-                d="M8 1.9l1.9 3.85 4.25.62-3.07 3 .72 4.23L8 11.6l-3.8 2 .72-4.23-3.07-3 4.25-.62z"
-                stroke="currentColor"
-                strokeWidth="1.3"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className="nav-label">{t('navStarred')}</span>
-            <span className="nav-count">{navCounts.starred}</span>
-          </button>
-        </nav>
         <div className="sidebar-divider" />
         {renderFolderPanel()}
         <SettingsEntry />
