@@ -19,6 +19,7 @@ import { fileCountKey, visiblePageCount } from './counts'
 import { useI18n } from './locale'
 import type { I18n, StringKey } from './locale'
 import { SettingsModal } from './SettingsModal'
+import type { SectionId as SettingsSectionId } from './SettingsModal'
 
 declare global {
   interface Window {
@@ -641,13 +642,31 @@ function ConflictPrompt({ names, onChoose }: ConflictPromptProps) {
 function SettingsEntry() {
   const { t } = useI18n()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsSection, setSettingsSection] = useState<SettingsSectionId | undefined>(undefined)
+
+  // 主进程请求打开设置(帮助菜单的「关于」直达指定区块)
+  useEffect(() => {
+    const off = window.aiOffice.onOpenSettings?.((section) => {
+      setSettingsSection(section as SettingsSectionId)
+      setSettingsOpen(true)
+    })
+    return off
+  }, [])
 
   return (
     <div className="account-entry">
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && (
+        <SettingsModal
+          initialSection={settingsSection}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
       <button
         className="account-btn"
-        onClick={() => setSettingsOpen(true)}
+        onClick={() => {
+          setSettingsSection(undefined)
+          setSettingsOpen(true)
+        }}
         aria-haspopup="dialog"
         aria-expanded={settingsOpen}
         data-tip={t('settings')}

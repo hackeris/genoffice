@@ -147,6 +147,10 @@ export interface HomeApi {
   deleteFolder(dir: string): Promise<void>
   /** a folder under the root changed on disk (created/renamed/deleted/moved, from anywhere) */
   onFolderChanged(handler: (dirs: string[]) => void): () => void
+  /** 主进程请求打开设置弹窗(如帮助菜单的「关于」直达),参数为初始区块 id */
+  onOpenSettings(handler: (section: string) => void): () => void
+  /** 用系统默认浏览器打开 http(s) 链接(渲染进程内不可直接导航外链) */
+  openExternal(url: string): Promise<void>
   /** current UI language (persisted in userData/app-settings.json) */
   getLanguage(): Promise<UiLanguage>
   /** switch + persist the UI language; main rebuilds its menus to match */
@@ -339,6 +343,8 @@ export const HOME_CHANNELS = {
   movePaths: 'home:move-paths',
   deleteFolder: 'home:folder-delete',
   folderChanged: 'home:folder-changed',
+  openSettings: 'home:open-settings',
+  openExternal: 'home:open-external',
   getLanguage: 'home:get-language',
   setLanguage: 'home:set-language',
   getUpdateChannel: 'home:get-update-channel',

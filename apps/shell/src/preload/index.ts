@@ -154,6 +154,16 @@ const homeApi: HomeApi = {
     ipcRenderer.on(HOME_CHANNELS.folderChanged, listener)
     return () => ipcRenderer.removeListener(HOME_CHANNELS.folderChanged, listener)
   },
+  onOpenSettings(handler) {
+    const listener = (_event: IpcRendererEvent, section: unknown) => {
+      if (typeof section === 'string') handler(section)
+    }
+    ipcRenderer.on(HOME_CHANNELS.openSettings, listener)
+    return () => ipcRenderer.removeListener(HOME_CHANNELS.openSettings, listener)
+  },
+  async openExternal(url) {
+    await ipcRenderer.invoke(HOME_CHANNELS.openExternal, url)
+  },
   async openTrash() {
     await ipcRenderer.invoke(HOME_CHANNELS.openTrash)
   },

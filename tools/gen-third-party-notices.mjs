@@ -51,20 +51,26 @@ const IMPLICIT = ['electron']
  * they are invisible to the import scan.
  */
 function extraResourceSeeds() {
-  // the electron-builder config lives in its own cjs module (not package.json
-  // "build") so the publish URL can be injected from the environment
-  const build = require(join(ROOT, 'apps/shell/electron-builder.cjs'))
-  const entries = [build.extraResources, build.mac?.extraResources, build.win?.extraResources]
-  const names = []
-  for (const e of entries.flat()) {
-    const m = e?.from && /node_modules\/((?:@[^/]+\/)?[^/]+)$/.exec(e.from)
-    if (m) names.push(m[1])
+  try {
+    // the electron-builder config lives in its own cjs module (not package.json
+    // "build") so the publish URL can be injected from the environment
+    const build = require(join(ROOT, 'apps/shell/electron-builder.cjs'))
+    const entries = [build.extraResources, build.mac?.extraResources, build.win?.extraResources]
+    const names = []
+    for (const e of entries.flat()) {
+      const m = e?.from && /node_modules\/((?:@[^/]+\/)?[^/]+)$/.exec(e.from)
+      if (m) names.push(m[1])
+    }
+    return names
+  } catch {
+    // OHOS 构建机不拉 electron 二进制(惰性安装),electron-builder.cjs 校验
+    // extraResources 源文件时会抛错;这些种子只服务桌面安装器,HAP 分发用不到
+    return []
   }
-  return names
 }
 
 /** license file lives somewhere non-obvious */
-const LICENSE_PATH = { electron: 'dist/LICENSE' }
+const LICENSE_PATH = { electron: 'LICENSE' }
 
 /** license text is not published to npm; supply the notice by hand */
 const NOTE = {
@@ -247,15 +253,61 @@ const seed = importedNames()
 const { resolved, missing } = closure(seed)
 resolved.sort(([a], [b]) => a.localeCompare(b))
 
-let out = `GenOffice — Third-Party Software Notices
+// 上游项目的许可文本不来自 npm 闭包,须在此显式维护:
+// - GenOffice:Apache-2.0(全文即本仓根的 LICENSE,我们是其修改派生);
+//   NOTICE 要求保留 Mainfunc 署名与 UCD 说明
+// - Electron for OpenHarmony:MIT(文本短,内联于此;.temp 引擎产物不入仓,
+//   版权行以 engine-ref 仓库 LICENSE 为准)
+const UPSTREAM = `
+GenOffice
+  Copyright 2026 Mainfunc, Inc. — Apache License 2.0
+  https://github.com/genspark-ai/genoffice
+
+  Sota Office is a modified derivative of GenOffice (HarmonyOS port).
+  Per its NOTICE file: "This product includes software developed at
+  Mainfunc, Inc." Includes data derived from the Unicode Character
+  Database 17.0.0 (Unicode License v3; see LICENSE-UNICODE.txt in the
+  source tree). Bundled fonts are documented in
+  apps/docs/src/renderer/fonts/README.md.
+
+Electron for OpenHarmony
+  Copyright (c) 2026 nanqube — MIT License
+  (VSCodium for HarmonyOS PC, hos_vscodium-opensource; runtime built from
+  openharmony-sig/electron electron-v37.2.0-openharmony, which bundles
+  Chromium 138 and Node.js 22.17.0)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`
+
+let out = `Sota Office — Third-Party Software Notices
 
 This application includes third-party software components under the licenses
 reproduced below.
 
-Chromium (bundled via Electron) is licensed under BSD-style and other
-licenses — see LICENSES.chromium.html next to this file.
+The Electron runtime (openharmony port of Electron 37, MIT) bundles Chromium,
+which is licensed under BSD-style and other licenses — the complete license
+text is LICENSES.chromium.html in the upstream Electron distribution.
 `
 
+out += hr(`0. Upstream projects`)
+out += UPSTREAM
+out += readFileSync(join(ROOT, 'LICENSE'), 'utf8') // GenOffice 的 Apache-2.0 全文
 out += hr(`1. npm packages (${resolved.length})`)
 const noText = []
 for (const [name, { dir, pkg }] of resolved) {

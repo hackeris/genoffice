@@ -3,6 +3,7 @@ import {
   copyFileSync,
   cpSync,
   existsSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
   renameSync,
@@ -59,8 +60,6 @@ import {
   showOpenDialogWithMemory,
   showSaveDialogWithMemory,
   windowMenuTemplate,
-  aboutMenuItem,
-  checkUpdatesMenuItem,
   setUpdateCheckInvoker,
   installRendererProtocol,
 } from '@genoffice/electron-utils'
@@ -3542,6 +3541,14 @@ function registerHomeIpc(): void {
     })
   })
 
+  ipcMain.handle(HOME_CHANNELS.openExternal, (_e, url: unknown) => {
+    // 只放行 http(s):file/javascript 等协议在渲染进程侧传入即被拒
+    if (typeof url !== 'string' || !/^https?:\/\//.test(url)) return
+    shell.openExternal(url).catch(() => {
+      // no browser handler available; nothing actionable for the user here
+    })
+  })
+
   ipcMain.handle(HOME_CHANNELS.githubStars, () => fetchGithubStars())
 
   // returning true also counts as "shown": the renderer displays it
@@ -3776,8 +3783,7 @@ function buildHomeMenu(): void {
       submenu: [
         { label: tm('thirdPartyNotices'), click: () => void openThirdPartyNotices() },
         { type: 'separator' },
-        checkUpdatesMenuItem(appMenuLabels(currentLang())),
-        aboutMenuItem(appMenuLabels(currentLang())),
+        aboutSotaMenuItem(),
       ],
     },
   ]
@@ -3859,8 +3865,7 @@ function buildPdfMenu(): void {
       submenu: [
         { label: tm('thirdPartyNotices'), click: () => void openThirdPartyNotices() },
         { type: 'separator' },
-        checkUpdatesMenuItem(appMenuLabels(currentLang())),
-        aboutMenuItem(appMenuLabels(currentLang())),
+        aboutSotaMenuItem(),
       ],
     },
   ]
@@ -3951,8 +3956,7 @@ function buildMarkdownMenu(): void {
       submenu: [
         { label: tm('thirdPartyNotices'), click: () => void openThirdPartyNotices() },
         { type: 'separator' },
-        checkUpdatesMenuItem(appMenuLabels(currentLang())),
-        aboutMenuItem(appMenuLabels(currentLang())),
+        aboutSotaMenuItem(),
       ],
     },
   ]
@@ -4043,8 +4047,7 @@ function buildHtmlMenu(): void {
       submenu: [
         { label: tm('thirdPartyNotices'), click: () => void openThirdPartyNotices() },
         { type: 'separator' },
-        checkUpdatesMenuItem(appMenuLabels(currentLang())),
-        aboutMenuItem(appMenuLabels(currentLang())),
+        aboutSotaMenuItem(),
       ],
     },
   ]
@@ -4466,7 +4469,45 @@ function openThirdPartyNotices(): Promise<string> {
   const path = app.isPackaged
     ? join(process.resourcesPath, 'THIRD-PARTY-NOTICES.txt')
     : join(app.getAppPath(), 'build', 'THIRD-PARTY-NOTICES.txt')
-  return shell.openPath(path)
+  // 文件缺失时给可见反馈(shell.openPath 打不开只会静默返回错误串,用户看就是"空的")
+  if (!existsSync(path)) {
+    return import('electron').then(({ dialog }) =>
+      dialog.showMessageBox({
+        type: 'info',
+        title: tm('thirdPartyNotices'),
+        message: tm('thirdPartyNotices'),
+        detail: path,
+        buttons: ['OK'],
+        defaultId: 0,
+        cancelId: 0,
+      }).then(() => ''),
+    )
+  }
+  // OHOS:resfile 在应用私有沙箱里,系统查看器读不到(打开是空白)——
+  // 拷到共享的 Documents/Sota Office/ 再交给系统打开
+  try {
+    const shared = join(app.getPath('documents'), 'Sota Office')
+    mkdirSync(shared, { recursive: true })
+    const dest = join(shared, 'THIRD-PARTY-NOTICES.txt')
+    copyFileSync(path, dest)
+    return shell.openPath(dest)
+  } catch {
+    return shell.openPath(path)
+  }
+}
+
+/** 帮助 > 关于 Sota Office:不弹原生对话框,直接打开首页设置弹窗的「关于」区,
+ * 与左下角设置入口保持同一 UI、同一内容。 */
+function aboutSotaMenuItem(): MenuItemConstructorOptions {
+  const L = appMenuLabels(currentLang())
+  return {
+    label: L.about,
+    click: () => {
+      for (const wc of webContents.getAllWebContents()) {
+        if (!wc.isDestroyed()) wc.send(HOME_CHANNELS.openSettings, 'about')
+      }
+    },
+  }
 }
 
 /** every module's File menu gets a way back to the launcher */

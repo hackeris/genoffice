@@ -29,6 +29,10 @@ import type { AiCatalogEntry, UiTheme } from '../../shared/home-api'
 import { ProviderLogo } from './provider-logos'
 import './settings.css'
 
+// 上游项目链接(设置→关于 的开源致谢;打开走 openExternal,系统浏览器)
+const GENOFFICE_REPO_URL = 'https://github.com/genspark-ai/genoffice'
+const ENGINE_REPO_URL = 'https://gitcode.com/nanqube/hos_vscodium-opensource'
+
 // ── Settings modal (opened from the account menu) ─────────
 // Genspark-style two-pane dialog: section nav on the left, fields on the right.
 // All values go through the existing home IPC; nothing is stored locally.
@@ -128,8 +132,6 @@ function CustomFontSizeInput({
     </label>
   )
 }
-
-type SectionId = 'aiModel' | 'aiMedia' | 'general' | 'about'
 
 const SECTIONS: readonly { id: SectionId; labelKey: StringKey }[] = [
   { id: 'aiModel', labelKey: 'setSecAiModel' },
@@ -920,13 +922,17 @@ function AiStatusPill({ status }: { status: AiStatus | null }) {
   )
 }
 
+export type SectionId = 'aiModel' | 'aiMedia' | 'general' | 'about'
+
 export interface SettingsModalProps {
   onClose: () => void
+  /** 初始区块(如帮助菜单的「关于」直达);缺省为 aiModel */
+  initialSection?: SectionId
 }
 
-export function SettingsModal({ onClose }: SettingsModalProps) {
+export function SettingsModal({ onClose, initialSection }: SettingsModalProps) {
   const { lang, setLang, t } = useI18n()
-  const [section, setSection] = useState<SectionId>('aiModel')
+  const [section, setSection] = useState<SectionId>(initialSection ?? 'aiModel')
   const [theme, setTheme] = useState<UiTheme>('system')
   const [saveDir, setSaveDir] = useState('')
   const [autoSaveOn, setAutoSaveOn] = useState(false)
@@ -1148,6 +1154,38 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               <>
                 <h3 className="set-pane-title">{t('setSecAbout')}</h3>
                 <Field label={t('versionLabel')} value={appVersion || '—'} />
+                {/* 上游开源致谢(开源许可义务):均为专有名,不随语言变化;
+                    链接经 openExternal 用系统浏览器打开;完整许可文本见 帮助 > 第三方软件声明 */}
+                <div className="set-field-desc" style={{ padding: '2px 0 0', lineHeight: 1.7 }}>
+                  <div>
+                    Based on{' '}
+                    <a
+                      href={GENOFFICE_REPO_URL}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        void window.aiOffice.openExternal(GENOFFICE_REPO_URL)
+                      }}
+                      style={{ color: 'inherit', textDecoration: 'underline' }}
+                    >
+                      GenOffice
+                    </a>
+                    {' '}— Apache-2.0 (© Mainfunc, Inc.)
+                  </div>
+                  <div>
+                    Runtime:{' '}
+                    <a
+                      href={ENGINE_REPO_URL}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        void window.aiOffice.openExternal(ENGINE_REPO_URL)
+                      }}
+                      style={{ color: 'inherit', textDecoration: 'underline' }}
+                    >
+                      Electron for OpenHarmony
+                    </a>
+                    {' '}— MIT · Chromium
+                  </div>
+                </div>
                 {/* 更新通道在鸿蒙分发下无意义，先隐藏；代码保留，恢复时去掉本包裹即可 */}
                 {false && (
                 <div className="set-field">
