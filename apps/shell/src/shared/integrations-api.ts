@@ -35,7 +35,7 @@ export interface IntegrationsApi {
   uninstallSkill(agentId: AgentId): Promise<SkillInstallState>
   /** folder picker for "install elsewhere"; null when cancelled */
   pickSkillDir(title: string): Promise<string | null>
-  /** save dialog + write of genoffice-skill-<version>.zip; the saved path, null when cancelled */
+  /** save dialog + write of sotaoffice-skill-<version>.zip; the saved path, null when cancelled */
   saveSkillZip(title: string): Promise<string | null>
   /** put text on the clipboard (paths, the manual PATH command) */
   copyText(text: string): Promise<void>

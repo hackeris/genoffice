@@ -17,8 +17,7 @@ export const pt = {
   aiQcPageSkipped: 'Página {n}: verificação automática de layout ignorada',
   aiQcStopped: 'Verificação de layout interrompida',
   aiQcCapped: 'Mais {count} página(s) não verificada(s) (limite por execução)',
-  aiGskLoginBtn: 'Entrar no Genspark',
-  aiPanelTitle: 'Genspark',
+  aiPanelTitle: 'AI',
   aiOpenAssistant: 'Abrir assistente de IA',
   aiFactCheckBtn: 'Checagem IA',
   aiFactCheckPrompt:
@@ -114,8 +113,6 @@ export const pt = {
   aiErrOverloaded: 'O serviço de IA está sobrecarregado no momento — tente novamente em instantes',
   aiErrNetwork:
     'Problema de rede: não foi possível conectar ao serviço de IA. Verifique sua conexão e tente novamente',
-  aiCreditsExhausted:
-    'Seus créditos Genspark acabaram. Recarregue em genspark.ai/pricing e tente novamente',
   aiErrRequestFailed: 'Falha ao enviar a solicitação: {msg}',
   aiErrGenerateFailed: 'Falha na geração',
   aiErrRegenFailed: 'Falha ao refazer o slide',

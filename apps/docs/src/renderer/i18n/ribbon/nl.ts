@@ -192,7 +192,7 @@ export const nl = {
   ribbonReplaceTip: 'Tekst zoeken en vervangen',
   ribbonSelectAll: 'Alles selecteren',
   ribbonSelectAllTip: 'Het hele document selecteren',
-  ribbonAiAssistant: 'Genspark',
+  ribbonAiAssistant: 'AI',
   ribbonAiAssistantTip: 'De AI-assistent openen',
   ribbonRemoveTableStyleTip: 'Tabelstijl verwijderen',
   ribbonNoStyle: 'Geen stijl',

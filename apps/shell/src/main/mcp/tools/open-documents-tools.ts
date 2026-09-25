@@ -123,7 +123,7 @@ export function resolveOpenDocumentOfFamily(
 /** a guided "no such document" error listing what is actually open */
 function noMatch(target: string, documents: readonly OpenDocumentTab[]): Error {
   if (documents.length === 0) {
-    return new Error(`no document is open in GenOffice, so "${target}" cannot be resolved`)
+    return new Error(`no document is open in Sota Office, so "${target}" cannot be resolved`)
   }
   const listing = documents
     .map((doc) => `  ${doc.id}  ${doc.filePath ?? '(never saved)'}  — ${typeLabel(doc)}`)

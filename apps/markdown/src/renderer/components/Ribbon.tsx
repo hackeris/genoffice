@@ -12,7 +12,7 @@ import {
 import { useI18n } from '../i18n/locale'
 import { MARKDOWN_THEME_IDS, type MarkdownTheme } from '../../shared/markdown-theme'
 import type { StringKey } from '../i18n/locale'
-import { GensparkMark } from '../ai/AiPanel'
+import { AiMark } from '../ai/AiPanel'
 import { uiOp, type BlockType, type ListKind, type StylableMark } from '../editor/ops'
 import {
   IconBullets,
@@ -452,9 +452,9 @@ export function Ribbon({
               onClick={onToggleAi}
             >
               <span className="rb-big-icon">
-                <GensparkMark size={26} />
+                <AiMark size={26} />
               </span>
-              <span>Genspark AI</span>
+              <span>AI</span>
             </button>
             {aiPresets.map(({ kind, btn, prompt }) => (
               <button

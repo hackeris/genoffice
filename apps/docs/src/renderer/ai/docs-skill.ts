@@ -23,7 +23,7 @@ import {
 import type { AiNotesAccess } from './note-ops'
 
 const IMAGE_GEN_OFF_NOTE =
-  '\n\nNote: generate_image is currently unavailable (no image provider: signed out of Genspark or cloud tools off, and no media API key in Settings). Do not call or promise it; use image_search for imagery.'
+  '\n\nNote: generate_image is currently unavailable (no image provider configured: add a media API key in Settings). Do not call or promise it; use image_search for imagery.'
 
 const MEDIA_ANALYSIS_OFF_NOTE =
   '\n\nNote: analyze_media is currently unavailable (no media provider: signed out of Genspark or cloud tools off, and no media API key in Settings). You cannot see what a picture inside the document shows — tell the user that instead of guessing at its content.'

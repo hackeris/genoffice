@@ -189,7 +189,7 @@ export const cs = {
   ribbonReplaceTip: 'Najít a nahradit text',
   ribbonSelectAll: 'Vybrat vše',
   ribbonSelectAllTip: 'Vybrat celý dokument',
-  ribbonAiAssistant: 'Genspark',
+  ribbonAiAssistant: 'AI',
   ribbonAiAssistantTip: 'Otevřít asistenta AI',
   ribbonRemoveTableStyleTip: 'Odebrat styl tabulky',
   ribbonNoStyle: 'Bez stylu',

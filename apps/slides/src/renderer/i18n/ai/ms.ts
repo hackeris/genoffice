@@ -17,8 +17,7 @@ export const ms = {
   aiQcPageSkipped: 'Halaman {n}: semakan susun atur automatik dilangkau',
   aiQcStopped: 'Semakan susun atur dihentikan',
   aiQcCapped: '{count} halaman lagi tidak disemak (had setiap larian)',
-  aiGskLoginBtn: 'Log masuk ke Genspark',
-  aiPanelTitle: 'Genspark',
+  aiPanelTitle: 'AI',
   aiOpenAssistant: 'Buka pembantu AI',
   aiFactCheckBtn: 'Semak Fakta AI',
   aiFactCheckPrompt:
@@ -113,8 +112,6 @@ export const ms = {
   aiErrOverloaded: 'Perkhidmatan AI sedang sibuk — sila cuba lagi sebentar lagi',
   aiErrNetwork:
     'Masalah rangkaian: tidak dapat menghubungi perkhidmatan AI. Semak sambungan anda dan cuba lagi',
-  aiCreditsExhausted:
-    'Kredit Genspark anda telah habis. Tambah nilai di genspark.ai/pricing dan cuba lagi',
   aiErrRequestFailed: 'Gagal menghantar permintaan: {msg}',
   aiErrGenerateFailed: 'Penjanaan gagal',
   aiErrRegenFailed: 'Gagal membuat semula slaid',

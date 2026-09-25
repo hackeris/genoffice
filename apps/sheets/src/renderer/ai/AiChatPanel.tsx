@@ -16,7 +16,7 @@ import {
   type AiTokenUsageView,
   useChatRunQueue,
 } from '@genoffice/ui'
-import { GensparkMark } from '../ribbon-icons'
+import { AiMark } from '../ribbon-icons'
 import type { ChangePlan } from '@genoffice/xlsx-gateway/domain/workbook.types'
 import { ATTACHMENT_IMAGE_EXTS, type AttachmentMeta } from '../../shared/desktop-api'
 import { useI18n, type TFunc } from '../i18n/locale'
@@ -486,7 +486,7 @@ export function AiChatPanel({
           data-tip={t('aiOpenAssistant')}
           aria-label={t('aiOpenAssistant')}
         >
-          <GensparkMark size={22} />
+          <AiMark size={22} />
         </button>
       </aside>
     )
@@ -570,8 +570,8 @@ export function AiChatPanel({
       />
       <header className="ai-panel-header">
         <span className="ai-panel-title">
-          <GensparkMark size={22} />
-          Genspark
+          <AiMark size={22} />
+          AI
         </span>
         <div className="ai-panel-header-actions">
           <AiPanelSideButton
