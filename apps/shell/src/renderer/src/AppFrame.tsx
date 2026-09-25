@@ -10,7 +10,9 @@ interface AppFrameProps {
 
 export function AppFrame({ initialOnboardingSeen }: AppFrameProps) {
   const [homeActive, setHomeActive] = useState(true)
-  const [showOnboarding, setShowOnboarding] = useState(!initialOnboardingSeen)
+  // 引导页含 genoffice 图标与旧标语,已不适用——先隐藏(不渲染)。
+  // finishOnboarding 逻辑保留,恢复时改回 useState(!initialOnboardingSeen)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
     const applyTabs = (tabs: Awaited<ReturnType<typeof window.aiOfficeTabs.list>>) => {
