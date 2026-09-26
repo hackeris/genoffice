@@ -385,14 +385,16 @@ body.vib .home {
 }
 
 .quick-cards {
-  display: flex;
-  align-items: stretch;
+  /* 三行布局:六种新建 3×2,「打开本地文件」独占第三行并居中 */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  max-width: 660px;
+  margin: 0 auto;
 }
 
 .quick-card {
   position: relative;
-  flex: 1;
   min-width: 0;
   max-width: 280px;
   overflow: hidden;
@@ -471,6 +473,13 @@ body.vib .home {
   color: var(--text-muted);
 }
 
+/* 「打开本地文件」是卡片的最后一个孩子:独占一行,按内容宽居中 */
+.quick-cards > .quick-card:last-child {
+  grid-column: 1 / -1;
+  justify-self: center;
+  min-width: 240px;
+}
+
 .ai-chip {
   padding: 1px 6px;
   border-radius: 4px;
@@ -483,11 +492,10 @@ body.vib .home {
 
 @media (max-width: 1100px) {
   .quick-cards {
-    flex-wrap: wrap;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .quick-card {
-    flex: 1 1 calc(50% - 5px);
     max-width: none;
   }
 }
