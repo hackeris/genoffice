@@ -157,7 +157,7 @@ export function createSessionTools(
           ok: true,
           family,
           sessionId: wcId,
-          message: `A new empty ${familyLabel(family)} is open in Sota Office. Add content, then call save_session.`,
+          message: `A new empty ${familyLabel(family)} is open in Smart Office. Add content, then call save_session.`,
         }
       },
     },

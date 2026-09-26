@@ -282,7 +282,7 @@ import { isUpdateChannel, type UpdateChannel } from '../shared/update-api'
 if (!app.isPackaged)
   app.setPath(
     'userData',
-    process.env.GENOFFICE_USER_DATA ?? join(app.getPath('appData'), 'Sota Office Dev'),
+    process.env.GENOFFICE_USER_DATA ?? join(app.getPath('appData'), 'Smart Office Dev'),
   )
 
 /**
@@ -2467,7 +2467,7 @@ function createShellWindow(): void {
     height: 900,
     minWidth: 720,
     minHeight: 550,
-    title: 'Sota Office',
+    title: 'Smart Office',
     // vibrancy: editor modules punch translucent regions (e.g. the slides
     // thumbnail pane) through to the desktop
     ...(process.platform === 'darwin'
@@ -2922,7 +2922,7 @@ function newDocTab(): void {
 
 /** MCP: open a blank docs tab and return its webContents id, for the visible-editor bridge */
 function openBlankDocsTabForMcp(): number {
-  if (!tabManager) throw new Error('Sota Office is not ready')
+  if (!tabManager) throw new Error('Smart Office is not ready')
   const tabId = tabManager.openDocsTab(undefined, { newBlank: true })
   const view = tabManager.docsTabs().find((t) => t.id === tabId)
   if (!view) throw new Error('the new document tab could not be opened')
@@ -2939,7 +2939,7 @@ function openBlankDocsTabForMcp(): number {
  * marking is skipped, the file name is the agent's business.
  */
 async function openBlankSheetsTabForMcp(): Promise<number> {
-  if (!tabManager) throw new Error('Sota Office is not ready')
+  if (!tabManager) throw new Error('Smart Office is not ready')
   const filePath = uniquePathIn(defaultSaveDir(), `${tm('untitledSheet')}.xlsx`)
   writeFileSync(filePath, await blankXlsxBuffer())
   const tabId = tabManager.openSheetsTab(filePath)
@@ -3010,7 +3010,7 @@ function abandonBlankTabForMcp(
 
 /** MCP: open a blank slides tab and return its webContents id, for the visible-deck bridge */
 function openBlankSlidesTabForMcp(): number {
-  if (!tabManager) throw new Error('Sota Office is not ready')
+  if (!tabManager) throw new Error('Smart Office is not ready')
   const tabId = tabManager.openSlidesTab()
   const view = tabManager.slidesTabs().find((t) => t.id === tabId)
   if (!view) throw new Error('the new presentation tab could not be opened')
@@ -4495,9 +4495,9 @@ function openThirdPartyNotices(): Promise<string> {
     )
   }
   // OHOS:resfile 在应用私有沙箱里,系统查看器读不到(打开是空白)——
-  // 拷到共享的 Documents/Sota Office/ 再交给系统打开
+  // 拷到共享的 Documents/Smart Office/ 再交给系统打开
   try {
-    const shared = join(app.getPath('documents'), 'Sota Office')
+    const shared = join(app.getPath('documents'), 'Smart Office')
     mkdirSync(shared, { recursive: true })
     const dest = join(shared, 'THIRD-PARTY-NOTICES.txt')
     copyFileSync(path, dest)
@@ -4507,7 +4507,7 @@ function openThirdPartyNotices(): Promise<string> {
   }
 }
 
-/** 帮助 > 关于 Sota Office:不弹原生对话框,直接打开首页设置弹窗的「关于」区,
+/** 帮助 > 关于 Smart Office:不弹原生对话框,直接打开首页设置弹窗的「关于」区,
  * 与左下角设置入口保持同一 UI、同一内容。必须先切回首页再广播:弹窗开在首页
  * 渲染层里,文档 tab(WebContentsView)盖在首页上方时只广播不切换,弹窗会被
  * 挡住,菜单项看起来像点了没反应(2026-09-26 实测)。 */

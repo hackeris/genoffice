@@ -207,7 +207,7 @@ export function createDocumentTools(deps: DocToolDeps, host: SessionHost): McpTo
     },
     {
       name: 'open_in_genoffice',
-      description: 'Open an existing file in the running Sota Office app, focusing its tab.',
+      description: 'Open an existing file in the running Smart Office app, focusing its tab.',
       inputSchema: {
         path: z.string().describe('absolute path to the file to open'),
       },

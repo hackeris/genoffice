@@ -324,7 +324,8 @@ export const strings = {
     appMenu: '菜单',
     newTab: '新建标签页',
     // First-run onboarding
-    onbTitle1: '欢迎使用 Sota Office',
+    welcomeTitle: '欢迎使用 Smart Office',
+    onbTitle1: '欢迎使用 Smart Office',
     onbSubtitle1: '第一个开源的 AI 原生 Office 套件',
     onbBody1: '创建文档、制作表格、生成演示、审阅 PDF。AI 深度融入每个环节。',
     onbSkip: '跳过',
@@ -664,7 +665,8 @@ export const strings = {
     appMenu: 'Menu',
     newTab: 'New tab',
     // First-run onboarding
-    onbTitle1: 'Welcome to Sota Office',
+    welcomeTitle: 'Welcome to Smart Office',
+    onbTitle1: 'Welcome to Smart Office',
     onbSubtitle1: 'The first open-source, AI-native office suite',
     onbBody1:
       'Create docs, build sheets, make slides, and review PDFs. AI is built into every step.',
@@ -1017,7 +1019,8 @@ export const strings = {
     appMenu: 'メニュー',
     newTab: '新しいタブ',
     // First-run onboarding
-    onbTitle1: 'Sota Office へようこそ',
+    welcomeTitle: 'Smart Office へようこそ',
+    onbTitle1: 'Smart Office へようこそ',
     onbSubtitle1: '初のオープンソース AI ネイティブ Office スイート',
     onbBody1:
       '文書の作成、表計算、プレゼン作成、PDF のレビュー。あらゆるステップに AI が組み込まれています。',
@@ -1363,7 +1366,8 @@ export const strings = {
     appMenu: '메뉴',
     newTab: '새 탭',
     // First-run onboarding
-    onbTitle1: 'Sota Office에 오신 것을 환영합니다',
+    welcomeTitle: 'Smart Office에 오신 것을 환영합니다',
+    onbTitle1: 'Smart Office에 오신 것을 환영합니다',
     onbSubtitle1: '최초의 오픈소스 AI 네이티브 오피스 제품군',
     onbBody1:
       '문서 작성, 스프레드시트 제작, 프레젠테이션 생성, PDF 검토. 모든 단계에 AI가 녹아 있습니다.',
@@ -1721,7 +1725,8 @@ export const strings = {
     appMenu: 'Menu',
     newTab: 'Nouvel onglet',
     // First-run onboarding
-    onbTitle1: 'Bienvenue dans Sota Office',
+    welcomeTitle: 'Bienvenue dans Smart Office',
+    onbTitle1: 'Bienvenue dans Smart Office',
     onbSubtitle1: 'La première suite bureautique open source et native IA',
     onbBody1:
       'Créez des documents, des feuilles de calcul et des présentations, et relisez des PDF. L’IA est intégrée à chaque étape.',
@@ -2082,7 +2087,8 @@ export const strings = {
     appMenu: 'Menü',
     newTab: 'Neuer Tab',
     // First-run onboarding
-    onbTitle1: 'Willkommen bei Sota Office',
+    welcomeTitle: 'Willkommen bei Smart Office',
+    onbTitle1: 'Willkommen bei Smart Office',
     onbSubtitle1: 'Die erste quelloffene, KI-native Office-Suite',
     onbBody1:
       'Dokumente erstellen, Tabellen bauen, Präsentationen gestalten und PDFs prüfen. KI ist in jedem Schritt integriert.',
@@ -2439,7 +2445,8 @@ export const strings = {
     appMenu: 'Menú',
     newTab: 'Nueva pestaña',
     // First-run onboarding
-    onbTitle1: 'Bienvenido a Sota Office',
+    welcomeTitle: 'Bienvenido a Smart Office',
+    onbTitle1: 'Bienvenido a Smart Office',
     onbSubtitle1: 'La primera suite ofimática de código abierto y nativa de IA',
     onbBody1:
       'Crea documentos, hojas de cálculo y presentaciones, y revisa PDF. La IA está integrada en cada paso.',
@@ -2782,7 +2789,8 @@ export const strings = {
     appMenu: 'เมนู',
     newTab: 'แท็บใหม่',
     // First-run onboarding
-    onbTitle1: 'ยินดีต้อนรับสู่ Sota Office',
+    welcomeTitle: 'ยินดีต้อนรับสู่ Smart Office',
+    onbTitle1: 'ยินดีต้อนรับสู่ Smart Office',
     onbSubtitle1: 'ชุดโปรแกรมออฟฟิศ AI-native โอเพนซอร์สตัวแรก',
     onbBody1: 'สร้างเอกสาร ทำสเปรดชีต สร้างงานนำเสนอ และตรวจทาน PDF ทุกขั้นตอนมี AI ในตัว',
     onbSkip: 'ข้าม',
@@ -3133,7 +3141,8 @@ export const strings = {
     appMenu: 'Menu',
     newTab: 'Tab baru',
     // First-run onboarding
-    onbTitle1: 'Selamat datang di Sota Office',
+    welcomeTitle: 'Selamat datang di Smart Office',
+    onbTitle1: 'Selamat datang di Smart Office',
     onbSubtitle1: 'Suite office open source AI-native pertama',
     onbBody1:
       'Buat dokumen, susun spreadsheet, rancang presentasi, dan tinjau PDF. AI hadir di setiap langkah.',
@@ -3484,7 +3493,8 @@ export const strings = {
     appMenu: 'Меню',
     newTab: 'Новая вкладка',
     // First-run onboarding
-    onbTitle1: 'Добро пожаловать в Sota Office',
+    welcomeTitle: 'Добро пожаловать в Smart Office',
+    onbTitle1: 'Добро пожаловать в Smart Office',
     onbSubtitle1: 'Первый открытый AI-нативный офисный пакет',
     onbBody1:
       'Создавайте документы, таблицы и презентации, работайте с PDF. ИИ встроен в каждый шаг.',
@@ -3828,7 +3838,8 @@ export const strings = {
     appMenu: 'القائمة',
     newTab: 'علامة تبويب جديدة',
     // First-run onboarding
-    onbTitle1: 'مرحبًا بك في Sota Office',
+    welcomeTitle: 'مرحبًا بك في Smart Office',
+    onbTitle1: 'مرحبًا بك في Smart Office',
     onbSubtitle1: 'أول حزمة مكتبية مفتوحة المصدر وأصيلة في الذكاء الاصطناعي',
     onbBody1:
       'أنشئ المستندات وجداول البيانات والعروض التقديمية وراجع ملفات PDF. الذكاء الاصطناعي مدمج في كل خطوة.',
@@ -4175,7 +4186,8 @@ export const strings = {
     appMenu: 'Menu',
     newTab: 'Nova guia',
     // First-run onboarding
-    onbTitle1: 'Bem-vindo ao Sota Office',
+    welcomeTitle: 'Bem-vindo ao Smart Office',
+    onbTitle1: 'Bem-vindo ao Smart Office',
     onbSubtitle1: 'A primeira suíte de escritório open source e nativa de IA',
     onbBody1:
       'Crie documentos, planilhas e apresentações e revise PDFs. A IA está integrada em cada etapa.',
@@ -4521,7 +4533,8 @@ export const strings = {
     appMenu: 'Menu',
     newTab: 'Nuova scheda',
     // First-run onboarding
-    onbTitle1: 'Benvenuto in Sota Office',
+    welcomeTitle: 'Benvenuto in Smart Office',
+    onbTitle1: 'Benvenuto in Smart Office',
     onbSubtitle1: 'La prima suite per ufficio open source e nativa per l’IA',
     onbBody1:
       'Crea documenti, fogli di calcolo e presentazioni e rivedi i PDF. L’IA è integrata in ogni passaggio.',
@@ -4863,7 +4876,8 @@ export const strings = {
     appMenu: 'Menu',
     newTab: 'Nowa karta',
     // First-run onboarding
-    onbTitle1: 'Witamy w Sota Office',
+    welcomeTitle: 'Witamy w Smart Office',
+    onbTitle1: 'Witamy w Smart Office',
     onbSubtitle1: 'Pierwszy otwartoźródłowy, natywnie oparty na AI pakiet biurowy',
     onbBody1:
       'Twórz dokumenty, arkusze i prezentacje oraz przeglądaj pliki PDF. AI jest wbudowana w każdy etap.',
@@ -5191,7 +5205,8 @@ export const strings = {
     appMenu: 'Nabídka',
     newTab: 'Nová karta',
     // First-run onboarding
-    onbTitle1: 'Vítejte v Sota Office',
+    welcomeTitle: 'Vítejte v Smart Office',
+    onbTitle1: 'Vítejte v Smart Office',
     onbSubtitle1: 'První open-source kancelářský balík s nativní AI',
     onbBody1:
       'Vytvářejte dokumenty, tabulky a prezentace a kontrolujte PDF. AI je součástí každého kroku.',
@@ -5548,7 +5563,8 @@ export const strings = {
     appMenu: 'Menu',
     newTab: 'Nieuw tabblad',
     // First-run onboarding
-    onbTitle1: 'Welkom bij Sota Office',
+    welcomeTitle: 'Welkom bij Smart Office',
+    onbTitle1: 'Welkom bij Smart Office',
     onbSubtitle1: 'De eerste open source, AI-native officesuite',
     onbBody1:
       'Maak documenten, bouw spreadsheets, maak presentaties en beoordeel PDF-bestanden. AI zit in elke stap ingebouwd.',
@@ -5895,7 +5911,8 @@ export const strings = {
     appMenu: 'Menu',
     newTab: 'Tab baharu',
     // First-run onboarding
-    onbTitle1: 'Selamat datang ke Sota Office',
+    welcomeTitle: 'Selamat datang ke Smart Office',
+    onbTitle1: 'Selamat datang ke Smart Office',
     onbSubtitle1: 'Suite pejabat sumber terbuka natif AI yang pertama',
     onbBody1:
       'Cipta dokumen, bina hamparan, hasilkan persembahan dan semak PDF. AI tersedia pada setiap langkah.',
@@ -6227,7 +6244,8 @@ export const strings = {
     appMenu: 'תפריט',
     newTab: 'כרטיסייה חדשה',
     // First-run onboarding
-    onbTitle1: 'ברוכים הבאים ל-Sota Office',
+    welcomeTitle: 'ברוכים הבאים ל-Smart Office',
+    onbTitle1: 'ברוכים הבאים ל-Smart Office',
     onbSubtitle1: 'חבילת המשרד הראשונה בקוד פתוח שהיא AI-נייטיב',
     onbBody1: 'צרו מסמכים, בנו גיליונות, הכינו מצגות ובדקו קובצי PDF. ה-AI מובנה בכל שלב.',
     onbSkip: 'דילוג',
@@ -6568,7 +6586,8 @@ export const strings = {
     appMenu: 'मेनू',
     newTab: 'नया टैब',
     // First-run onboarding
-    onbTitle1: 'Sota Office में आपका स्वागत है',
+    welcomeTitle: 'Smart Office में आपका स्वागत है',
+    onbTitle1: 'Smart Office में आपका स्वागत है',
     onbSubtitle1: 'पहला ओपन-सोर्स, AI-नेटिव ऑफ़िस सुइट',
     onbBody1:
       'दस्तावेज़ बनाएँ, स्प्रेडशीट तैयार करें, प्रस्तुतियाँ बनाएँ और PDF की समीक्षा करें। AI हर चरण में शामिल है।',
@@ -6896,7 +6915,8 @@ export const strings = {
     appMenu: '選單',
     newTab: '新分頁',
     // First-run onboarding
-    onbTitle1: '歡迎使用 Sota Office',
+    welcomeTitle: '歡迎使用 Smart Office',
+    onbTitle1: '歡迎使用 Smart Office',
     onbSubtitle1: '第一個開源的 AI 原生 Office 套件',
     onbBody1: '建立文件、製作試算表、產生簡報、審閱 PDF。AI 深度融入每個環節。',
     onbSkip: '略過',
