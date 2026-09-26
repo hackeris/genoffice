@@ -1,6 +1,6 @@
 {
   "name": "@genoffice/slides",
-  "productName": "Sota Office Slides",
+  "productName": "Smart Office Slides",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "private": true,
@@ -46,10 +46,10 @@
     "vite": "^7.3.1",
     "vitest": "^4.1.11"
   },
-  "author": "Sota Office",
+  "author": "Smart Office",
   "build": {
     "appId": "app.fuqidian.sotaoffice.slides",
-    "productName": "Sota Office Slides",
+    "productName": "Smart Office Slides",
     "electronVersion": "43.3.0",
     "directories": {
       "output": "release"

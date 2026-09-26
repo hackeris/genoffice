@@ -336,7 +336,7 @@ const tMain = createI18n({
     menuWindow: '窗口',
     menuHelp: '帮助',
     menuShortcuts: '键盘快捷键',
-    menuDocsHelp: 'Sota Office Docs 帮助',
+    menuDocsHelp: 'Smart Office Docs 帮助',
   },
   en: {
     dlgOpenDoc: 'Open Document',
@@ -475,7 +475,7 @@ const tMain = createI18n({
     menuWindow: 'Window',
     menuHelp: 'Help',
     menuShortcuts: 'Keyboard Shortcuts',
-    menuDocsHelp: 'Sota Office Docs Help',
+    menuDocsHelp: 'Smart Office Docs Help',
   },
   ja: {
     dlgOpenDoc: '文書を開く',
@@ -614,7 +614,7 @@ const tMain = createI18n({
     menuWindow: 'ウィンドウ',
     menuHelp: 'ヘルプ',
     menuShortcuts: 'キーボードショートカット',
-    menuDocsHelp: 'Sota Office Docs ヘルプ',
+    menuDocsHelp: 'Smart Office Docs ヘルプ',
   },
   ko: {
     dlgOpenDoc: '문서 열기',
@@ -754,7 +754,7 @@ const tMain = createI18n({
     menuWindow: '창',
     menuHelp: '도움말',
     menuShortcuts: '키보드 바로 가기',
-    menuDocsHelp: 'Sota Office Docs 도움말',
+    menuDocsHelp: 'Smart Office Docs 도움말',
   },
   fr: {
     dlgOpenDoc: 'Ouvrir un document',
@@ -895,7 +895,7 @@ const tMain = createI18n({
     menuWindow: 'Fenêtre',
     menuHelp: 'Aide',
     menuShortcuts: 'Raccourcis clavier',
-    menuDocsHelp: 'Aide Sota Office Docs',
+    menuDocsHelp: 'Aide Smart Office Docs',
   },
   de: {
     dlgOpenDoc: 'Dokument öffnen',
@@ -1036,7 +1036,7 @@ const tMain = createI18n({
     menuWindow: 'Fenster',
     menuHelp: 'Hilfe',
     menuShortcuts: 'Tastenkombinationen',
-    menuDocsHelp: 'Sota Office Docs-Hilfe',
+    menuDocsHelp: 'Smart Office Docs-Hilfe',
   },
   es: {
     dlgOpenDoc: 'Abrir documento',
@@ -1177,7 +1177,7 @@ const tMain = createI18n({
     menuWindow: 'Ventana',
     menuHelp: 'Ayuda',
     menuShortcuts: 'Atajos de teclado',
-    menuDocsHelp: 'Ayuda de Sota Office Docs',
+    menuDocsHelp: 'Ayuda de Smart Office Docs',
   },
   th: {
     dlgOpenDoc: 'เปิดเอกสาร',
@@ -1316,7 +1316,7 @@ const tMain = createI18n({
     menuWindow: 'หน้าต่าง',
     menuHelp: 'วิธีใช้',
     menuShortcuts: 'แป้นพิมพ์ลัด',
-    menuDocsHelp: 'วิธีใช้ Sota Office Docs',
+    menuDocsHelp: 'วิธีใช้ Smart Office Docs',
   },
   id: {
     dlgOpenDoc: 'Buka Dokumen',
@@ -1456,7 +1456,7 @@ const tMain = createI18n({
     menuWindow: 'Jendela',
     menuHelp: 'Bantuan',
     menuShortcuts: 'Pintasan Papan Ketik',
-    menuDocsHelp: 'Bantuan Sota Office Docs',
+    menuDocsHelp: 'Bantuan Smart Office Docs',
   },
   ru: {
     dlgOpenDoc: 'Открыть документ',
@@ -1596,7 +1596,7 @@ const tMain = createI18n({
     menuWindow: 'Окно',
     menuHelp: 'Справка',
     menuShortcuts: 'Сочетания клавиш',
-    menuDocsHelp: 'Справка Sota Office Docs',
+    menuDocsHelp: 'Справка Smart Office Docs',
   },
   ar: {
     dlgOpenDoc: 'فتح مستند',
@@ -1736,7 +1736,7 @@ const tMain = createI18n({
     menuWindow: 'نافذة',
     menuHelp: 'تعليمات',
     menuShortcuts: 'اختصارات لوحة المفاتيح',
-    menuDocsHelp: 'تعليمات Sota Office Docs',
+    menuDocsHelp: 'تعليمات Smart Office Docs',
   },
   pt: {
     dlgOpenDoc: 'Abrir Documento',
@@ -1876,7 +1876,7 @@ const tMain = createI18n({
     menuWindow: 'Janela',
     menuHelp: 'Ajuda',
     menuShortcuts: 'Atalhos de Teclado',
-    menuDocsHelp: 'Ajuda do Sota Office Docs',
+    menuDocsHelp: 'Ajuda do Smart Office Docs',
   },
   it: {
     dlgOpenDoc: 'Apri documento',
@@ -2016,7 +2016,7 @@ const tMain = createI18n({
     menuWindow: 'Finestra',
     menuHelp: 'Aiuto',
     menuShortcuts: 'Scelte rapide da tastiera',
-    menuDocsHelp: 'Guida di Sota Office Docs',
+    menuDocsHelp: 'Guida di Smart Office Docs',
   },
   pl: {
     dlgOpenDoc: 'Otwórz dokument',
@@ -2156,7 +2156,7 @@ const tMain = createI18n({
     menuWindow: 'Okno',
     menuHelp: 'Pomoc',
     menuShortcuts: 'Skróty klawiaturowe',
-    menuDocsHelp: 'Pomoc Sota Office Docs',
+    menuDocsHelp: 'Pomoc Smart Office Docs',
   },
   cs: {
     dlgOpenDoc: 'Otevřít dokument',
@@ -2296,7 +2296,7 @@ const tMain = createI18n({
     menuWindow: 'Okno',
     menuHelp: 'Nápověda',
     menuShortcuts: 'Klávesové zkratky',
-    menuDocsHelp: 'Nápověda Sota Office Docs',
+    menuDocsHelp: 'Nápověda Smart Office Docs',
   },
   nl: {
     dlgOpenDoc: 'Document openen',
@@ -2436,7 +2436,7 @@ const tMain = createI18n({
     menuWindow: 'Venster',
     menuHelp: 'Help',
     menuShortcuts: 'Sneltoetsen',
-    menuDocsHelp: 'Sota Office Docs Help',
+    menuDocsHelp: 'Smart Office Docs Help',
   },
   ms: {
     dlgOpenDoc: 'Buka Dokumen',
@@ -2576,7 +2576,7 @@ const tMain = createI18n({
     menuWindow: 'Tetingkap',
     menuHelp: 'Bantuan',
     menuShortcuts: 'Pintasan Papan Kekunci',
-    menuDocsHelp: 'Bantuan Sota Office Docs',
+    menuDocsHelp: 'Bantuan Smart Office Docs',
   },
   he: {
     dlgOpenDoc: 'פתיחת מסמך',
@@ -2715,7 +2715,7 @@ const tMain = createI18n({
     menuWindow: 'חלון',
     menuHelp: 'עזרה',
     menuShortcuts: 'קיצורי מקלדת',
-    menuDocsHelp: 'עזרה של Sota Office Docs',
+    menuDocsHelp: 'עזרה של Smart Office Docs',
   },
   hi: {
     dlgOpenDoc: 'दस्तावेज़ खोलें',
@@ -2855,7 +2855,7 @@ const tMain = createI18n({
     menuWindow: 'विंडो',
     menuHelp: 'सहायता',
     menuShortcuts: 'कीबोर्ड शॉर्टकट',
-    menuDocsHelp: 'Sota Office Docs सहायता',
+    menuDocsHelp: 'Smart Office Docs सहायता',
   },
   'zh-TW': {
     dlgOpenDoc: '開啟文件',
@@ -2992,7 +2992,7 @@ const tMain = createI18n({
     menuWindow: '視窗',
     menuHelp: '說明',
     menuShortcuts: '鍵盤快速鍵',
-    menuDocsHelp: 'Sota Office Docs 說明',
+    menuDocsHelp: 'Smart Office Docs 說明',
   },
 })
 const tm = (key: Parameters<typeof tMain>[1], params?: Parameters<typeof tMain>[2]) =>
@@ -5990,7 +5990,7 @@ export function createDocsWindow(openPath?: string): BrowserWindow {
     height: 900,
     minWidth: 720,
     minHeight: 550,
-    title: 'Sota Office Docs',
+    title: 'Smart Office Docs',
     // Word-like custom title bar (document name centered, quick-access buttons)
     ...(process.platform === 'darwin'
       ? { titleBarStyle: 'hiddenInset' as const }

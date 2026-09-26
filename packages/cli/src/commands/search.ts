@@ -7,7 +7,7 @@ import { CliError, EXIT } from '../result'
 export const searchCommand: CommandDef = {
   name: 'search',
   summary:
-    'Web or image search through the provider configured in Sota Office (Serper, Serply, Tavily, Parallel, Bocha).',
+    'Web or image search through the provider configured in Smart Office (Serper, Serply, Tavily, Parallel, Bocha).',
   usage: 'search <query> [--images] [--max <n>]',
   options: [
     { name: 'images', description: 'search images instead of web pages' },
