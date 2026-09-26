@@ -5,6 +5,10 @@ edition = "2024"
 license = "Apache-2.0"
 publish = false
 
+[lib]
+# lib:宿主测试与 bin 复用;cdylib:鸿蒙 Native 子进程入口库(系统 dlopen 后调 Main)
+crate-type = ["lib", "cdylib"]
+
 [features]
 # Run indexing and recalc inline instead of on threads, as WebAssembly builds
 # without threads must; lets that path be tested on any machine.

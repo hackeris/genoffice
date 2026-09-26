@@ -1,0 +1,2 @@
+# build.sh 的中间产物(最终产物由其拷贝到 entry/libs/arm64-v8a/libxlsx_launcher.node)
+*.so

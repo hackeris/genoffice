@@ -3,10 +3,10 @@
 //! serves it one call at a time, for hosts without stdin or threads.
 
 use std::collections::VecDeque;
-use std::io::{self, BufWriter, Write};
+use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
 
 use crate::archive::{
@@ -937,5 +937,123 @@ mod tests {
             .unwrap();
         assert!(!response.ok);
         assert_eq!(response.error.unwrap().code, "recalc_busy");
+    }
+}
+
+/// 独立程序与鸿蒙 Native 子进程(ohos_child_entry.rs)共用的 stdio 主循环:
+/// 请求按到达顺序在本线程执行;专用读线程排空 stdin,让 cancel 能插队,
+/// 而较早的请求仍在处理中。队列上界让 stdin 背压贴近旧的读一处理一循环。
+pub fn run_stdio_main() {
+    if !THREADS {
+        serve_sequentially();
+        return;
+    }
+    let stdin = io::stdin();
+    let output: SharedOutput = Arc::new(Mutex::new(BufWriter::new(io::stdout())));
+    let mut sessions = WorkbookSessions::new();
+    let recalc = RecalcWorker::new();
+    let cancelled = CancelledRequests::new();
+    let in_flight = InFlightRequest::new();
+    let (queue, requests) = mpsc::sync_channel::<Request>(8);
+    let reader_output = Arc::clone(&output);
+    let reader_cancelled = cancelled.clone();
+    let reader_in_flight = in_flight.clone();
+    let reader = thread::Builder::new()
+        .name("xlsx-reader".into())
+        .spawn(move || {
+            for line in BufReader::new(stdin.lock()).lines() {
+                let line = match line {
+                    Ok(line) => line,
+                    Err(error) => {
+                        let _ = write_response(
+                            &reader_output,
+                            &Response::failure(
+                                String::new(),
+                                "stdin_error",
+                                format!("Unable to read sidecar request: {error}"),
+                            ),
+                        );
+                        break;
+                    }
+                };
+                let request: Request = match serde_json::from_str(&line) {
+                    Ok(request) => request,
+                    Err(error) => {
+                        if write_response(
+                            &reader_output,
+                            &Response::failure(
+                                String::new(),
+                                "invalid_json",
+                                format!("Invalid sidecar request: {error}"),
+                            ),
+                        )
+                        .is_err()
+                        {
+                            break;
+                        }
+                        continue;
+                    }
+                };
+                if let Command::Cancel { target_request_id } = request.command {
+                    let response = if request.version == PROTOCOL_VERSION {
+                        reader_cancelled.insert(target_request_id.clone());
+                        // A target already running is past the queue's reach;
+                        // trip the flag its open is polling.
+                        reader_in_flight.cancel(&target_request_id);
+                        Response::success(
+                            request.request_id,
+                            serde_json::json!({ "cancelled": true }),
+                        )
+                    } else {
+                        Response::failure(
+                            request.request_id,
+                            "unsupported_version",
+                            "Unsupported sidecar protocol version.".into(),
+                        )
+                    };
+                    if write_response(&reader_output, &response).is_err() {
+                        break;
+                    }
+                    continue;
+                }
+                if queue.send(request).is_err() {
+                    break;
+                }
+            }
+        });
+    if reader.is_err() {
+        return;
+    }
+
+    for request in requests {
+        in_flight.begin(&request.request_id);
+        let response = handle_request(
+            request,
+            &mut sessions,
+            &recalc,
+            &cancelled,
+            &in_flight,
+            &output,
+        );
+        if let Some(response) = response
+            && write_response(&output, &response).is_err()
+        {
+            break;
+        }
+    }
+}
+
+/// Without threads there is no reader to let a cancel jump the queue: each
+/// request runs to completion before the next line is read.
+fn serve_sequentially() {
+    let mut engine = Engine::new();
+    let mut output = BufWriter::new(io::stdout());
+    for line in io::stdin().lock().lines() {
+        let Ok(line) = line else { break };
+        if let Some(response) = engine.handle_line(&line)
+            && (writeln!(output, "{response}").is_err() || output.flush().is_err())
+        {
+            break;
+        }
     }
 }
