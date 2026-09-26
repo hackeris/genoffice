@@ -1,5 +1,7 @@
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createInterface, type Interface } from 'node:readline'
+
+import { resolveChildProcess } from './xlsx-sidecar-host'
 
 const PROTOCOL_VERSION = 1
 const REQUEST_TIMEOUT_MS = 30_000
@@ -237,10 +239,9 @@ export class XlsxSidecarClient {
     if (this.process && !this.process.killed) return this.process
     let child: ChildProcessWithoutNullStreams
     try {
-      child = spawn(this.binaryPath, [], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-        windowsHide: true,
-      })
+      // 鸿蒙统一包:Native 子进程的 socketpair fd 适配成上游 spawn 的产物形状
+      // (开发机无启动壳,内部回退上游原有 spawn)。其余代码与上游保持一致。
+      child = resolveChildProcess(this.binaryPath)
     } catch (error) {
       // Synchronous spawn failures ("spawn UNKNOWN") carry no path in the
       // message — rethrow with enough context to diagnose from a screenshot.
