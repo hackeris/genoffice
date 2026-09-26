@@ -123,6 +123,7 @@ import {
   configureMcpRuntime,
   getMcpRecentLogs,
   mcpLogFilePath,
+  MCP_DISABLED,
   mcpStatus,
   revealMcpLogFile,
   startMcpFromSettings,
@@ -4507,12 +4508,15 @@ function openThirdPartyNotices(): Promise<string> {
 }
 
 /** 帮助 > 关于 Sota Office:不弹原生对话框,直接打开首页设置弹窗的「关于」区,
- * 与左下角设置入口保持同一 UI、同一内容。 */
+ * 与左下角设置入口保持同一 UI、同一内容。必须先切回首页再广播:弹窗开在首页
+ * 渲染层里,文档 tab(WebContentsView)盖在首页上方时只广播不切换,弹窗会被
+ * 挡住,菜单项看起来像点了没反应(2026-09-26 实测)。 */
 function aboutSotaMenuItem(): MenuItemConstructorOptions {
   const L = appMenuLabels(currentLang())
   return {
     label: L.about,
     click: () => {
+      tabManager?.openHomeTab()
       for (const wc of webContents.getAllWebContents()) {
         if (!wc.isDestroyed()) wc.send(HOME_CHANNELS.openSettings, 'about')
       }
@@ -4787,6 +4791,9 @@ app.whenReady().then(async () => {
   initAnalytics()
   analytics.track('app_launch')
   startSheetsCaptureServer()
+  // MCP 停用(MCP_DISABLED,见 app-mcp.ts):装配、桥接监听与 boot 自启整体断开。
+  // 恢复时去掉此 gate 即可,块内代码保持原样。
+  if (!MCP_DISABLED) {
   // Register the docs renderer bridge listeners before the MCP server can take
   // a visible-editing request.
   installDocsBridge()
@@ -4872,6 +4879,7 @@ app.whenReady().then(async () => {
   void startMcpFromSettings(currentMcpSettings()).catch((error) => {
     console.error('[mcp] failed to start on boot:', error)
   })
+  } // end MCP gate
   createShellWindow()
   // deferred to ready: labels need currentLang(), which reads app.getLocale()
   installBackToHomeItems()

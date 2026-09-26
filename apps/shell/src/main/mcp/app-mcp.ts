@@ -62,6 +62,14 @@ export interface McpSettings {
   logging: boolean
 }
 
+/**
+ * 产品化停用：MCP 面向外部 agent，当前产品无此场景；且 headless 工具链的
+ * cli-runner 依赖 process.execPath 的 fork+exec，统一包（无可执行位声明，平板
+ * 才能安装）里没有运行条件。恢复 MCP：本开关置回 false，并解除 index.ts 里
+ * configureMcpRuntime 装配块的 gate。
+ */
+export const MCP_DISABLED = true
+
 export interface McpStatus {
   running: boolean
   enabled: boolean
@@ -202,6 +210,7 @@ function ensureService(): McpServerService {
 
 /** Start the server if settings say it should be on. Safe to call at boot. */
 export async function startMcpFromSettings(settings: McpSettings): Promise<void> {
+  if (MCP_DISABLED) return
   currentSettings = normalize(settings)
   if (!currentSettings.enabled) return
   await ensureService().start(currentSettings.port)
@@ -213,6 +222,7 @@ export async function startMcpFromSettings(settings: McpSettings): Promise<void>
  * values — start, stop, or restart when the port or the exposed tool set changes.
  */
 export async function applyMcpSettings(settings: McpSettings): Promise<McpStatus> {
+  if (MCP_DISABLED) return mcpStatus()
   const next = normalize(settings)
   const wasRunning = service?.isRunning() ?? false
   // both comparisons read the OLD settings: they must happen before currentSettings is overwritten
@@ -245,6 +255,17 @@ export function stopMcpSync(): void {
 }
 
 export function mcpStatus(): McpStatus {
+  if (MCP_DISABLED) {
+    return {
+      running: false,
+      enabled: false,
+      port: DEFAULT_MCP_PORT,
+      background: false,
+      logging: false,
+      url: null,
+      capabilities: [],
+    }
+  }
   const running = service?.isRunning() ?? false
   return {
     running,
