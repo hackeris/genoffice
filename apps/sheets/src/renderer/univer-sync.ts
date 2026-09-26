@@ -3076,11 +3076,16 @@ async function loadRange(
         state.retryTimers.set(sheetId, timer)
       }
     } else if (isActiveSheet(runtime, sheetId)) {
+      // 从未落盘的会话(新建空表)没有"流式"语义:上游这条状态条会带着内部
+      // 会话名与进行时时态永远挂在右上角,用户无从理解——改显示与事实一致
+      // 的完整加载文案。真实磁盘文件保持上游原样(大文件部分加载的模式告知)。
       setMessage(
-        t('appStreamingRows', {
-          name: state.file.name,
-          rows: sheet?.rowCount.toLocaleString() ?? '?',
-        }),
+        state.file.path
+          ? t('appStreamingRows', {
+              name: state.file.name,
+              rows: sheet?.rowCount.toLocaleString() ?? '?',
+            })
+          : t('appFullyLoaded'),
       )
     }
   } catch (error: unknown) {
