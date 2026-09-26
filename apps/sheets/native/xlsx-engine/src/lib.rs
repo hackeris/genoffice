@@ -16,6 +16,9 @@ use zip::ZipArchive;
 pub mod archive;
 pub mod convert;
 pub mod recalc;
+#[cfg(target_env = "ohos")]
+pub mod ohos_child_entry;
+pub mod protocol;
 mod richdata;
 mod shared_formulas;
 mod visuals;
