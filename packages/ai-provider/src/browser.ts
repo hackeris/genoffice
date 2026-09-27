@@ -10,6 +10,7 @@ export type {
   AiProviderMeta,
   AiSettings,
   CodexModelCatalog,
+  ProviderModelCatalog,
 } from './types'
 export {
   AI_PROVIDERS,

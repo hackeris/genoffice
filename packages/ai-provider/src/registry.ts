@@ -73,7 +73,7 @@ const DEEPSEEK_WIRE_IDS: Record<string, string> = { [DEEPSEEK_V41_FLASH]: 'deeps
  * is chat-completions on Zen but Anthropic Messages on Go — hence one table
  * each. Every Kimi id omits temperature, mirroring the direct Kimi adapter.
  */
-const OPENCODE_GATEWAY_ROOTS = {
+export const OPENCODE_GATEWAY_ROOTS = {
   zen: 'https://opencode.ai/zen',
   go: 'https://opencode.ai/zen/go',
 } as const

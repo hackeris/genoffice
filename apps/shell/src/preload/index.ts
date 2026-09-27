@@ -6,7 +6,12 @@ import {
   AI_SEARCH_PROVIDERS,
   getProviderAdapter,
 } from '@genoffice/ai-provider/browser'
-import type { AiSettings, CodexModelCatalog } from '@genoffice/ai-provider/browser'
+import type {
+  AiProviderId,
+  AiSettings,
+  CodexModelCatalog,
+  ProviderModelCatalog,
+} from '@genoffice/ai-provider/browser'
 import { installDropOpenBridge } from '@genoffice/electron-utils/drop-open'
 import type { UpdateUiState } from '../shared/update-api'
 import { normalizeAiPanelPrefs } from '@genoffice/ui/ai-panel-prefs'
@@ -518,6 +523,9 @@ const homeApi: HomeApi = {
       apiKey,
       ...(api ? { api } : {}),
     })) as CodexModelCatalog
+  },
+  async getProviderModels(provider, config) {
+    return (await ipcRenderer.invoke('ai:list-models', provider, config)) as ProviderModelCatalog
   },
   async testAiSettings(settings) {
     const result: unknown = await ipcRenderer.invoke('ai:chat', {

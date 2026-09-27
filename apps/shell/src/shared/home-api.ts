@@ -4,6 +4,7 @@ import type {
   AiMediaProviderConfig,
   AiMediaProviderId,
   AiMediaProviderMeta,
+  AiProviderId,
   AiProviderMeta,
   AiSearchProviderId,
   AiSearchProviderMeta,
@@ -11,6 +12,7 @@ import type {
   AiStreamChunk,
   AiStreamRequest,
   CodexModelCatalog,
+  ProviderModelCatalog,
 } from '@genoffice/ai-provider'
 import type { UpdateChannel, UpdateUiState } from './update-api'
 import type { KbFileInfo, KbReadPage, KbSearchHit } from '@genoffice/agent-core'
@@ -388,6 +390,11 @@ export interface HomeApi {
     apiKey?: string,
     api?: AiCustomProtocol,
   ): Promise<CodexModelCatalog>
+  /** live vendor model catalog for the picker; the failure mode travels inside the result */
+  getProviderModels(
+    provider: AiProviderId,
+    config: { apiKey?: string; baseUrl?: string },
+  ): Promise<ProviderModelCatalog>
   /** one-shot round trip against the given (possibly unsaved) settings — the settings-UI connection test */
   testAiSettings(settings: AiSettings): Promise<AiChatResponse>
   /** image generation / media analysis provider catalog */
