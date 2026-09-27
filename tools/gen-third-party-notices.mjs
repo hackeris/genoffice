@@ -47,8 +47,8 @@ const IMPLICIT = ['electron']
 
 /**
  * Packages copied into the installer verbatim by electron-builder rather than
- * bundled — the gsk CLI and its runtime deps are spawned, never imported, so
- * they are invisible to the import scan.
+ * bundled — such trees are spawned or loaded at runtime, never imported by a
+ * workspace specifier, so they are invisible to the import scan.
  */
 function extraResourceSeeds() {
   try {
@@ -76,8 +76,6 @@ const LICENSE_PATH = { electron: 'LICENSE' }
 const NOTE = {
   '@fluentui/react-icons':
     'Copyright (c) Microsoft Corporation. Licensed under the MIT License.\nhttps://github.com/microsoft/fluentui-system-icons',
-  '@genspark/cli':
-    'Copyright (c) Genspark. Licensed under the MIT License.\nhttps://www.npmjs.com/package/@genspark/cli',
 }
 
 /** SPDX strings that need a word on which side of a dual license we take */
