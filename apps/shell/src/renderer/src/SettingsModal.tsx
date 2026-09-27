@@ -222,6 +222,9 @@ function Field({
   )
 }
 
+/** sentinel dropdown row that flips the model field to a hand-typed input */
+const CUSTOM_MODEL_PICK = '__custom__'
+
 /** AI model pane: provider / model / key / base URL, saved to userData/ai-settings.json */
 function AiModelPane({ t }: { t: TFunc }) {
   const [catalog, setCatalog] = useState<AiCatalogEntry[]>(
@@ -242,6 +245,9 @@ function AiModelPane({ t }: { t: TFunc }) {
     | { kind: 'error' }
     | null
   >(null)
+  /** tri-state for the model field: null = follow the list (dropdown); a
+   * vendor without a list API needs a hand-typed id instead */
+  const [modelManual, setModelManual] = useState<boolean | null>(null)
 
   const refreshCodexModels = useCallback(async (cliPath = '', selectedModel = '') => {
     if (!window.aiOffice.getCodexModels) return
@@ -332,6 +338,15 @@ function AiModelPane({ t }: { t: TFunc }) {
     cliPath: undefined,
   }
   const isCodex = provider === 'codex'
+  /** a saved model the current list doesn't carry (vendor shipped it after our
+   * table, or the vendor has no list API) must read as itself — and stay editable */
+  const offListModel = !!(
+    meta &&
+    meta.models.length > 0 &&
+    config.model &&
+    !meta.models.includes(config.model)
+  )
+  const manualModel = modelManual === null ? offListModel : modelManual
 
   const touch = () => {
     setDirty(true)
@@ -436,24 +451,37 @@ function AiModelPane({ t }: { t: TFunc }) {
         <div className="set-field-text">
           <label className="set-field-label">{t('setAiModelId')}</label>
         </div>
-        {meta && meta.models.length > 0 ? (
+        {meta && meta.models.length > 0 && !manualModel ? (
           <Dropdown
             className="set-dd"
             value={config.model || meta.defaultModel}
             ariaLabel={t('setAiModelId')}
-            options={meta.models.map((m) => ({ value: m, label: m }))}
-            onPick={(m) => updateConfig({ model: m })}
+            options={[
+              ...meta.models.map((m) => ({ value: m, label: m })),
+              { value: CUSTOM_MODEL_PICK, label: t('setAiModelCustom') },
+            ]}
+            onPick={(m) =>
+              m === CUSTOM_MODEL_PICK ? setModelManual(true) : updateConfig({ model: m })
+            }
           />
         ) : (
-          <input
-            id="set-ai-model"
-            className="set-input"
-            type="text"
-            value={config.model}
-            placeholder="model-id"
-            spellCheck={false}
-            onChange={(e) => updateConfig({ model: e.target.value })}
-          />
+          <div className="set-btn-row">
+            <input
+              id="set-ai-model"
+              className="set-input"
+              style={{ flex: 1 }}
+              type="text"
+              value={config.model}
+              placeholder="model-id"
+              spellCheck={false}
+              onChange={(e) => updateConfig({ model: e.target.value })}
+            />
+            {meta && meta.models.length > 0 && (
+              <button type="button" className="set-btn" onClick={() => setModelManual(false)}>
+                {t('setAiModelFromList')}
+              </button>
+            )}
+          </div>
         )}
       </div>
       {modelSync && !isCodex && (
