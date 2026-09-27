@@ -85,7 +85,9 @@ import {
   testMediaProvider,
   type AiMediaProviderConfig,
   type AiMediaProviderId,
+  type AiProviderId,
   type AiSearchProviderId,
+  listProviderModels,
   resolveAiSettings,
   maxOutputTokensOf,
   setAiUserAgent,
@@ -2853,6 +2855,18 @@ export function registerAiIpc(): void {
 
   ipcMain.handle('ai:codex-models', async (_event, cliPath: unknown) => {
     return listCodexModels(typeof cliPath === 'string' ? cliPath : undefined)
+  })
+
+  // Live vendor catalog for the settings picker. The renderer sends the
+  // pane's in-editor config (an unsaved key must still list models); the
+  // failure modes travel inside the result so the UI can grade its hint.
+  ipcMain.handle('ai:list-models', async (_event, provider: unknown, config: unknown) => {
+    if (typeof provider !== 'string') return { ok: false as const, error: 'bad provider' }
+    const c = (config ?? {}) as { apiKey?: unknown; baseUrl?: unknown }
+    return listProviderModels(provider as AiProviderId, {
+      apiKey: typeof c.apiKey === 'string' ? c.apiKey : undefined,
+      baseUrl: typeof c.baseUrl === 'string' ? c.baseUrl : undefined,
+    })
   })
 
   ipcMain.handle('ai:stream', async (event, request: AiStreamRequest) => {

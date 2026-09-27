@@ -19,6 +19,7 @@ export type {
   AiStreamRequest,
   GenSparkAccountStatus,
   LegacyAiSettings,
+  ProviderModelCatalog,
 } from './types'
 export {
   AI_PROVIDERS,
@@ -66,6 +67,7 @@ export type {
   MediaBlob,
 } from './media-protocols'
 export { AI_PROVIDER_ADAPTERS, getProviderAdapter, modelLacksVision } from './registry'
+export { listProviderModels } from './model-catalog'
 export type {
   AiProtocol,
   ProviderAdapter,

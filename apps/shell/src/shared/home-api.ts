@@ -3,11 +3,13 @@ import type {
   AiMediaProviderConfig,
   AiMediaProviderId,
   AiMediaProviderMeta,
+  AiProviderId,
   AiProviderMeta,
   AiSearchProviderId,
   AiSearchProviderMeta,
   AiSettings,
   CodexModelCatalog,
+  ProviderModelCatalog,
 } from '@genoffice/ai-provider'
 import type { UpdateChannel } from './update-api'
 import type { AiPanelPrefs } from '@genoffice/ui/ai-panel-prefs'
@@ -217,6 +219,11 @@ export interface HomeApi {
   getAiProviders(): AiCatalogEntry[]
   /** live Codex model catalog discovered through the current or overridden app-server */
   getCodexModels(cliPath?: string): Promise<CodexModelCatalog>
+  /** live vendor model catalog for the picker; the failure mode travels inside the result */
+  getProviderModels(
+    provider: AiProviderId,
+    config: { apiKey?: string; baseUrl?: string },
+  ): Promise<ProviderModelCatalog>
   /** one-shot round trip against the given (possibly unsaved) settings — the settings-UI connection test */
   testAiSettings(settings: AiSettings): Promise<AiChatResponse>
   /** image generation / media analysis provider catalog */

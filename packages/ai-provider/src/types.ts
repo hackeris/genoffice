@@ -41,6 +41,16 @@ export interface CodexModelCatalog {
   defaultModel: string
 }
 
+/**
+ * Result of one vendor model-catalog fetch. `status` carries the HTTP status
+ * when the endpoint answered (401 → key rejected, 404/405 → no list endpoint)
+ * so callers can tell "key unusable" from "vendor has no catalog" from
+ * "network down"; transport failures leave it undefined.
+ */
+export type ProviderModelCatalog =
+  | { ok: true; models: string[] }
+  | { ok: false; status?: number; error: string }
+
 export interface AiProviderMeta {
   id: AiProviderId
   label: string

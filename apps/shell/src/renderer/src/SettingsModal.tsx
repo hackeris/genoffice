@@ -234,6 +234,14 @@ function AiModelPane({ t }: { t: TFunc }) {
   const [testResult, setTestResult] = useState<{ ok: boolean; error?: string } | null>(null)
   /** free-typed value of the output-cap field; committed (and clamped) on blur */
   const [maxTokensDraft, setMaxTokensDraft] = useState<string | null>(null)
+  /** grading of the last live-catalog refresh, shown under the model field */
+  const [modelSync, setModelSync] = useState<
+    | { kind: 'ok'; count: number }
+    | { kind: 'noKey' }
+    | { kind: 'rejected'; code: number }
+    | { kind: 'error' }
+    | null
+  >(null)
 
   const refreshCodexModels = useCallback(async (cliPath = '', selectedModel = '') => {
     if (!window.aiOffice.getCodexModels) return
@@ -250,6 +258,47 @@ function AiModelPane({ t }: { t: TFunc }) {
     )
   }, [])
 
+  /** refresh the picker from the vendor's live model catalog (HTTP; never throws) */
+  const refreshProviderModels = useCallback(
+    async (
+      providerId: AiSettings['provider'],
+      cfg: { apiKey?: string; baseUrl?: string },
+      selectedModel: string,
+    ) => {
+      if (!window.aiOffice.getProviderModels) return
+      if (providerId === 'codex') return // codex lists through its own app-server channel
+      if (!cfg.apiKey?.trim() && providerId !== 'custom') {
+        setModelSync({ kind: 'noKey' })
+        return
+      }
+      setModelSync(null)
+      const live = await window.aiOffice.getProviderModels(providerId, {
+        apiKey: cfg.apiKey ?? '',
+        baseUrl: cfg.baseUrl ?? '',
+      })
+      if (!live.ok) {
+        if (live.status === 401 || live.status === 403) setModelSync({ kind: 'rejected', code: live.status })
+        else if (live.status !== 404 && live.status !== 405) setModelSync({ kind: 'error' })
+        // 404/405: the vendor serves no list endpoint — the static table stays the catalog
+        return
+      }
+      setModelSync({ kind: 'ok', count: live.models.length })
+      setCatalog((current) =>
+        current.map((entry) => {
+          if (entry.id !== providerId) return entry
+          // the vendor's order wins; static entries it no longer lists trail
+          // off; a selected model missing from both still reads as itself
+          const merged = [...live.models]
+          for (const m of entry.models) if (!merged.includes(m)) merged.push(m)
+          const models =
+            selectedModel && !merged.includes(selectedModel) ? [selectedModel, ...merged] : merged
+          return { ...entry, models }
+        }),
+      )
+    },
+    [],
+  )
+
   useEffect(() => {
     let alive = true
     void window.aiOffice.getAiSettings?.().then((s) => {
@@ -259,11 +308,19 @@ function AiModelPane({ t }: { t: TFunc }) {
       if (codex) {
         void refreshCodexModels(codex.cliPath ?? '', codex.model).catch(() => undefined)
       }
+      const cfg = s.providers[s.provider]
+      void refreshProviderModels(
+        s.provider,
+        { apiKey: cfg?.apiKey ?? '', baseUrl: cfg?.baseUrl },
+        cfg?.model ?? '',
+      ).catch(() => undefined)
     })
     return () => {
       alive = false
     }
-  }, [refreshCodexModels])
+    // deliberately no `catalog` dep: a successful refresh above rewrites the
+    // catalog array, and re-running this effect would re-fetch in a loop
+  }, [refreshCodexModels, refreshProviderModels])
 
   if (!settings) return null
   const provider = settings.provider
@@ -300,6 +357,12 @@ function AiModelPane({ t }: { t: TFunc }) {
   const selectProvider = (id: AiSettings['provider']) => {
     setSettings({ ...settings, provider: id })
     touch()
+    const cfg = settings.providers[id]
+    void refreshProviderModels(
+      id,
+      { apiKey: cfg?.apiKey ?? '', baseUrl: cfg?.baseUrl },
+      cfg?.model ?? '',
+    ).catch(() => undefined)
   }
   const save = () => {
     window.aiOffice
@@ -307,6 +370,11 @@ function AiModelPane({ t }: { t: TFunc }) {
       .then(() => {
         setDirty(false)
         setSaved(true)
+        void refreshProviderModels(
+          provider,
+          { apiKey: config.apiKey, baseUrl: config.baseUrl },
+          config.model,
+        ).catch(() => undefined)
       })
       .catch((error) => {
         window.alert(error instanceof Error ? error.message : String(error))
@@ -319,8 +387,16 @@ function AiModelPane({ t }: { t: TFunc }) {
       .testAiSettings?.(settings)
       .then((r) => {
         setTestResult(r ?? { ok: false })
-        if (r?.ok && isCodex) {
-          void refreshCodexModels(config.cliPath ?? '', config.model).catch(() => undefined)
+        if (r?.ok) {
+          if (isCodex) {
+            void refreshCodexModels(config.cliPath ?? '', config.model).catch(() => undefined)
+          } else {
+            void refreshProviderModels(
+              provider,
+              { apiKey: config.apiKey, baseUrl: config.baseUrl },
+              config.model,
+            ).catch(() => undefined)
+          }
         }
       })
       .catch((error) =>
@@ -380,6 +456,17 @@ function AiModelPane({ t }: { t: TFunc }) {
           />
         )}
       </div>
+      {modelSync && !isCodex && (
+        <div className="set-field-desc set-ai-note">
+          {modelSync.kind === 'ok'
+            ? t('setAiModelSyncOk', { n: String(modelSync.count) })
+            : modelSync.kind === 'noKey'
+              ? t('setAiModelSyncNoKey')
+              : modelSync.kind === 'rejected'
+                ? t('setAiModelSyncRejected', { code: String(modelSync.code) })
+                : t('setAiModelSyncError')}
+        </div>
+      )}
       {isCodex ? (
         <div className="set-field">
           <div className="set-field-text">
