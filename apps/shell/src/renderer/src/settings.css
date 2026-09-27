@@ -418,6 +418,29 @@
   height: 100%;
 }
 
+/* AI pane: hand-typed model row — keeps the control column width of the
+   other fields while packing the "pick from list" escape hatch inline */
+.set-model-row {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  width: 46%;
+  min-width: 200px;
+}
+
+.set-model-row .set-input {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+.set-model-row .set-btn {
+  height: auto;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
 .set-btn {
   flex-shrink: 0;
   display: inline-flex;

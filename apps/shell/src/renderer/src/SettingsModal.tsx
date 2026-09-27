@@ -465,11 +465,10 @@ function AiModelPane({ t }: { t: TFunc }) {
             }
           />
         ) : (
-          <div className="set-btn-row">
+          <div className="set-model-row">
             <input
               id="set-ai-model"
               className="set-input"
-              style={{ flex: 1 }}
               type="text"
               value={config.model}
               placeholder="model-id"
