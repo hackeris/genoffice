@@ -6410,9 +6410,11 @@ async function installMainProcessProxy(): Promise<void> {
   ].find((v) => v && /^https?:\/\//.test(v))
   if (!proxyUrl) {
     try {
-      // PAC/rule proxies answer per-host: probe the host the login flow, the
-      // Genspark LLM proxy and the gsk CLI actually target
-      const resolved = await session.defaultSession.resolveProxy('https://www.genspark.ai/')
+      // PAC/rule proxies answer per-host: probe a representative overseas LLM
+      // API host — the fetches this bootstrap serves target the overseas BYOK
+      // providers (api.openai.com, api.anthropic.com, ...), domestic ones are
+      // reached directly
+      const resolved = await session.defaultSession.resolveProxy('https://api.openai.com/')
       const m = /PROXY\s+([^;\s]+)/.exec(resolved)
       if (m) proxyUrl = `http://${m[1]}`
     } catch {
