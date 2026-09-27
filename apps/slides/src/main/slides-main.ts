@@ -4647,9 +4647,10 @@ async function applyMainProcessProxy(): Promise<void> {
   // No environment variables: read the system proxy (requires app ready)
   try {
     await app.whenReady()
-    // PAC/rule proxies answer per-host: probe the host the login flow, the
-    // Genspark LLM proxy and the gsk CLI actually target
-    const resolved = await electronSession.defaultSession.resolveProxy('https://www.genspark.ai/')
+    // PAC/rule proxies answer per-host: probe a representative overseas LLM
+    // API host — the fetches this dispatcher serves target the overseas BYOK
+    // providers, domestic ones are reached directly
+    const resolved = await electronSession.defaultSession.resolveProxy('https://api.openai.com/')
     // resolveProxy returns strings like "PROXY 127.0.0.1:1087" or "DIRECT"
     const m = /PROXY\s+([^;]+)/i.exec(resolved || '')
     if (m) {
