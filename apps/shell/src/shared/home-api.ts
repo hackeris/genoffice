@@ -399,7 +399,7 @@ export interface HomeApi {
   testAiSettings(settings: AiSettings): Promise<AiChatResponse>
   /** image generation / media analysis provider catalog */
   getAiMediaProviders(): AiMediaProviderMeta[]
-  /** credential check for a (possibly unsaved) media provider; genspark reports the gsk login state */
+  /** credential check for a (possibly unsaved) media provider */
   testAiMediaSettings(input: {
     provider: AiMediaProviderId
     config: AiMediaProviderConfig

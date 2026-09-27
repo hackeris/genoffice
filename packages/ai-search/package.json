@@ -15,9 +15,13 @@
   },
   "dependencies": {
     "@genoffice/ai-provider": "*",
+<<<<<<< HEAD
     "@genoffice/electron-utils": "*",
     "@genspark/cli": "^1.4.2",
     "@modelcontextprotocol/sdk": "^1.32.1"
+=======
+    "@genoffice/electron-utils": "*"
+>>>>>>> 4714817e (chore: 删除 @genspark/cli 死依赖与 gsk 安装器拷贝)
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
