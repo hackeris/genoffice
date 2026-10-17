@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite'
+import type { DatabaseSync } from 'node:sqlite'
 import { basename, dirname, extname } from 'node:path'
 import { MAX_BODY_CHARS } from './extract'
 import { buildSnippet, containsAny, excerpt, type SnippetPart } from './snippet'
@@ -108,6 +108,12 @@ export class FileIndexStore {
   private readonly db: DatabaseSync
 
   constructor(dbPath: string) {
+    // 运行时加载:鸿蒙 Electron fork(Node 22 构建未编入 sqlite binding)上
+    // 静态 import 会在 bundle 求值期抛 "No such binding: sqlite" 炸掉整个主进程;
+    // 挪进构造函数后由调用方的 try/catch 接住,文件索引降级不可用,应用正常起
+    const { DatabaseSync } = require('node:sqlite') as {
+      DatabaseSync: new (path: string) => DatabaseSync
+    }
     this.db = new DatabaseSync(dbPath)
     this.db.exec('PRAGMA journal_mode = WAL')
     this.db.exec(SCHEMA)
