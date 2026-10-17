@@ -101,7 +101,6 @@ import { collectPdfInternalLinks } from './pdf-internal-links'
 import type { PdfInternalLink } from '../shared/ipc'
 import { showToast } from './components/toast-bus'
 import { buildStandaloneHtml } from './html-export'
-import { aiPanelInitiallyOpen } from '@genoffice/ui'
 
 /** An export waiting for the pagination preview to mount; resolve settles the caller's exportPdf promise. */
 export type PendingPdfExport = {
@@ -702,8 +701,6 @@ export async function newFile(ctx: FileActionContext): Promise<boolean | undefin
     ctx.onWriteProtectionLoaded(null)
     ctx.setCompareResult(null)
     ctx.dirtyRef.current = false
-    // same rule as the first render, so the "open in new documents" setting holds for Cmd+N too
-    ctx.setShowAi(aiPanelInitiallyOpen('aidocs.showAi'))
     ctx.setStatus(t('appNewDocCreated'))
     return true
   } catch (err) {
