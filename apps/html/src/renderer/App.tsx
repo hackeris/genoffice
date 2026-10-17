@@ -7,7 +7,6 @@ import {
   useAutoSavePref,
   type FindPanelStrings,
   type FindTarget,
-  aiPanelInitiallyOpen,
   rememberAiPanelOpen,
   useAiSidebarEnabled,
 } from '@genoffice/ui'
@@ -146,7 +145,8 @@ export default function App() {
   const [previewNonce, setPreviewNonce] = useState(0)
   const [draftHtml, setDraftHtml] = useState<string | null>(null)
   const [historyState, setHistoryState] = useState({ undo: false, redo: false })
-  const [aiOpen, setAiOpen] = useState(() => aiPanelInitiallyOpen('htmlapp.showAi'))
+  // AI 侧边栏默认收起,点开后记住(存过 '1' 才展开)
+  const [aiOpen, setAiOpen] = useState(() => localStorage.getItem('htmlapp.showAi') === '1')
   // the sidebar switch is a soft hide; it closes the panel when it turns off
   const aiSidebarEnabled = useAiSidebarEnabled(setAiOpen)
   const [aiPreset, setAiPreset] = useState<AiPreset | null>(null)

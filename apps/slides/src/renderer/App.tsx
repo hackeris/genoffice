@@ -103,7 +103,6 @@ import {
   useAutoSavePref,
   type AiScopeQuoteData,
   type WordArtPreset,
-  aiPanelInitiallyOpen,
   rememberAiPanelOpen,
   useAiSidebarEnabled,
 } from '@genoffice/ui'
@@ -476,7 +475,8 @@ export function App() {
   useEffect(() => {
     window.slidesApi.setAutoSavePref?.(autoSave)
   }, [autoSave])
-  const [showAi, setShowAi] = useState(() => aiPanelInitiallyOpen('ai-slides-show-ai'))
+  // AI 侧边栏默认收起,点开后记住(存过 '1' 才展开)
+  const [showAi, setShowAi] = useState(() => localStorage.getItem('ai-slides-show-ai') === '1')
   // Settings › "show the AI sidebar" off hides the panel and its rail (Word's
   // Copilot-pane model): an explicit Ask-AI action still opens the panel for
   // this deck, and closing it returns to hidden. The dock stays mounted; the

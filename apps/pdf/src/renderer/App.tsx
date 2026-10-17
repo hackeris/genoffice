@@ -171,7 +171,6 @@ import type { CharStyle } from './color-runs'
 import { platformShortcuts } from '@genoffice/i18n'
 import {
   Dropdown,
-  aiPanelInitiallyOpen,
   rememberAiPanelOpen,
   useDismissablePopover,
   useRibbonCollapse,
@@ -455,8 +454,9 @@ export default function App() {
     window.addEventListener('pointerup', onUp)
   }
   // Persisted so a closed AI panel stays closed on next launch (docs/slides parity)
+  // AI 侧边栏默认收起,点开后记住(存过 '1'——即未收起——才展开)
   const [aiCollapsed, setAiCollapsed] = useState(
-    () => !aiPanelInitiallyOpen('genoffice-pdf-show-ai'),
+    () => localStorage.getItem('genoffice-pdf-show-ai') !== '1',
   )
   /** the panel setter in the "true = visible" sense the sidebar hook expects */
   const setAiOpen = useCallback((open: boolean) => setAiCollapsed(!open), [])

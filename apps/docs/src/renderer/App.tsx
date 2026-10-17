@@ -19,7 +19,6 @@ import { NodeSelection, TextSelection, type Command, type Transaction } from '@t
 import {
   Dropdown,
   ImageViewer,
-  aiPanelInitiallyOpen,
   rememberAiPanelOpen,
   createZoomWheelClassifier,
   useAutoSavePref,
@@ -791,7 +790,8 @@ export function App() {
   } | null>(null)
   const [_recent, setRecent] = useState<string[]>([])
   const [settings, setSettings] = useState<AiSettings>(DEFAULT_SETTINGS)
-  const [showAi, setShowAi] = useState(() => aiPanelInitiallyOpen('aidocs.showAi'))
+  // AI 侧边栏默认收起,点开后记住(存过 '1' 才展开)
+  const [showAi, setShowAi] = useState(() => localStorage.getItem('aidocs.showAi') === '1')
   // Settings › "show the AI sidebar" off hides the panel and its rail the way Word
   // treats the Copilot pane: an explicit Ask-AI action (ribbon, context menu,
   // shortcut, preset) still opens the panel for this document, and closing it
