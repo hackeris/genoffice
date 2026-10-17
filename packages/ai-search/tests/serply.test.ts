@@ -42,7 +42,6 @@ describe('Serply web search', () => {
     const fetch = vi.fn<typeof globalThis.fetch>(async () => webResponse())
     vi.stubGlobal('fetch', fetch)
     const r = await webSearch('genoffice', 5, {
-      useGsk: false,
       serplyKey: 'user-key',
       serperKey: 'serper-key',
       prefer: 'serply',
@@ -93,7 +92,6 @@ describe('Serply web search', () => {
       }),
     )
     const r = await webSearch('genoffice', 3, {
-      useGsk: false,
       serplyKey: 'bad-key',
       prefer: 'serply',
     })
@@ -126,7 +124,6 @@ describe('Serply image search', () => {
     )
     vi.stubGlobal('fetch', fetch)
     const r = await imageSearch('eiffel tower', 2, {
-      useGsk: false,
       serplyKey: 'user-key',
       serperKey: 'serper-key',
       prefer: 'serply',
@@ -170,7 +167,7 @@ describe('Serply image search', () => {
         })
       }),
     )
-    const r = await imageSearch('cats', 3, { useGsk: false, serplyKey: 'a', serperKey: 'b' })
+    const r = await imageSearch('cats', 3, { serplyKey: 'a', serperKey: 'b' })
     expect(r.method).toBe('serper')
     expect(urls).toEqual(['https://google.serper.dev/images'])
   })
@@ -187,7 +184,6 @@ describe('Serply settings wiring', () => {
       },
     }
     expect(searchOptionsFromSettings(settings)).toEqual({
-      useGsk: false,
       serplyKey: 'k',
       prefer: 'serply',
     })

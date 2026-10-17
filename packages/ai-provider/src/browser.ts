@@ -19,6 +19,7 @@ export {
   MAX_MAX_OUTPUT_TOKENS,
   MIN_MAX_OUTPUT_TOKENS,
   clampMaxOutputTokens,
+  defaultAiSettings,
 } from './providers'
 export {
   activeCustomEndpoint,

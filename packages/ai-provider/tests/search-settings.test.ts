@@ -76,7 +76,7 @@ describe('Serply search settings', () => {
       activeSearchProvider({
         search: { ...settings, providers: { ...settings.providers, serply: { apiKey: '  ' } } },
       }),
-    ).toBe('genspark')
+    ).toBeNull()
   })
 })
 
@@ -132,7 +132,7 @@ describe('exa and firecrawl providers', () => {
     expect(s.providers.firecrawl.apiKey).toBe('')
   })
 
-  it('activate with a key and fall back to genspark without one', () => {
+  it('activate with a key; empty key falls back to the keyless chain (null)', () => {
     const mk = (id: 'exa' | 'firecrawl', apiKey: string) => ({
       search: {
         provider: id,
@@ -144,11 +144,11 @@ describe('exa and firecrawl providers', () => {
           exa: { apiKey: id === 'exa' ? apiKey : '' },
           firecrawl: { apiKey: id === 'firecrawl' ? apiKey : '' },
         },
-      },
+      } as never,
     })
-    expect(activeSearchProvider(mk('exa', ''))).toBe('genspark')
+    expect(activeSearchProvider(mk('exa', ''))).toBeNull()
     expect(activeSearchProvider(mk('exa', 'exa-1'))).toBe('exa')
-    expect(activeSearchProvider(mk('firecrawl', ' '))).toBe('genspark')
+    expect(activeSearchProvider(mk('firecrawl', ' '))).toBeNull()
     expect(activeSearchProvider(mk('firecrawl', 'fc-1'))).toBe('firecrawl')
   })
 

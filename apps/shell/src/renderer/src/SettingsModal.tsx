@@ -1768,11 +1768,18 @@ export interface SettingsModalProps {
   onClose: () => void
   /** 初始区块(如帮助菜单的「关于」直达);缺省为 aiModel */
   initialSection?: SectionId
+  /** 文件搜索设置(Jev rerank)变化后,首页需要刷新一次检索结果 */
+  onFileSearchChange?: () => void
+  /** 外部入口(如首页 rerank 按钮)指定打开的区块与焦点块 */
+  target?: SettingsTarget | null
 }
 
-export function SettingsModal({ onClose, initialSection }: SettingsModalProps) {
+export function SettingsModal({ onClose, initialSection, onFileSearchChange, target }: SettingsModalProps) {
   const { lang, setLang, t } = useI18n()
   const [section, setSection] = useState<SectionId>(initialSection ?? 'aiModel')
+  useEffect(() => {
+    if (target) setSection(target.section)
+  }, [target])
   const [theme, setTheme] = useState<UiTheme>('system')
   const [docTheme, setDocTheme] = useState<DocTheme>('follow')
   const [saveDir, setSaveDir] = useState('')
@@ -1784,6 +1791,7 @@ export function SettingsModal({ onClose, initialSection }: SettingsModalProps) {
   const [authorName, setAuthorName] = useState<AuthorNameSetting>({ value: '', fallback: '' })
   const [channel, setChannel] = useState<'stable' | 'beta'>('stable')
   const [appVersion, setAppVersion] = useState('')
+  const [updateState, setUpdateState] = useState<UpdateUiState | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -1824,6 +1832,38 @@ export function SettingsModal({ onClose, initialSection }: SettingsModalProps) {
     const off = window.aiOffice.onUpdateStateChanged?.((s) => setUpdateState(s))
     return () => off?.()
   }, [])
+
+  // Windows only opens the system page; re-read ownership when the user comes back
+  useEffect(() => {
+    if (!defaultApp?.manualOnly) return
+    const refresh = () => {
+      void window.aiOffice.getDefaultAppStatus?.().then(setDefaultApp)
+    }
+    window.addEventListener('focus', refresh)
+    return () => window.removeEventListener('focus', refresh)
+  }, [defaultApp?.manualOnly])
+
+  const claimDefaultApp = () => {
+    setDefaultAppBusy(true)
+    setDefaultAppFailed(false)
+    void window.aiOffice
+      .setDefaultApp()
+      .then((st) => {
+        setDefaultApp(st)
+        if (!st.manualOnly && st.state !== 'default') setDefaultAppFailed(true)
+      })
+      .catch(() => setDefaultAppFailed(true))
+      .finally(() => setDefaultAppBusy(false))
+  }
+
+  const defaultAppDesc = (() => {
+    if (!defaultApp) return ''
+    if (defaultAppFailed) return t('setDefaultAppFailed')
+    if (defaultApp.state === 'default') return t('setDefaultAppIs')
+    if (defaultApp.state === 'other' && defaultApp.others.length > 0)
+      return t('setDefaultAppOther', { app: defaultApp.others.join(', ') })
+    return t('setDefaultAppDesc')
+  })()
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

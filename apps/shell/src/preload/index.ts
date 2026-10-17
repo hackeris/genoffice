@@ -20,6 +20,7 @@ import type {
   FolderRoot,
   MoveResult,
   AuthorNameSetting,
+  DefaultAppStatus,
   HomeApi,
   RecentEntry,
   RecentPage,
@@ -488,6 +489,15 @@ const homeApi: HomeApi = {
   async starPromptAction(action) {
     if (action !== 'starred' && action !== 'later') throw new Error('Invalid star prompt action.')
     await ipcRenderer.invoke(HOME_CHANNELS.starPromptAction, action)
+  },
+  async getAuthorName() {
+    return (await ipcRenderer.invoke(HOME_CHANNELS.getAuthorName)) as AuthorNameSetting
+  },
+  async setAuthorName(value) {
+    return (await ipcRenderer.invoke(
+      HOME_CHANNELS.setAuthorName,
+      value,
+    )) as AuthorNameSetting
   },
   // AI settings channels are registered once by the shell's aggregated docs handlers
   onAiSettingsChanged(handler) {

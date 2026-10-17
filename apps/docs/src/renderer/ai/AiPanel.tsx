@@ -831,7 +831,7 @@ export function AiPanel({
           () => pageSetupAccessRef.current,
           () => docExtrasRef.current,
           () => notesAccessRef.current,
-          () => mediaAnalysisAvailable(settingsRef.current, gskLoggedInRef.current),
+          () => mediaAnalysisAvailable(settingsRef.current),
         ),
         createFilesSkill(availableAttachments),
       ]),

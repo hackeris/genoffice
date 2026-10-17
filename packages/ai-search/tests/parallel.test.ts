@@ -39,7 +39,6 @@ describe('Parallel search', () => {
     vi.stubGlobal('fetch', fetch)
     expect(
       await webSearch('office tools', 1, {
-        useGsk: false,
         parallelKey: 'saved-key',
         prefer: 'parallel',
       }),
@@ -92,7 +91,6 @@ describe('Parallel search', () => {
         }),
       )
       const r = await webSearch('office', 1, {
-        useGsk: false,
         parallelKey: 'key',
         prefer: 'parallel',
       })

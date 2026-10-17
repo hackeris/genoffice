@@ -103,9 +103,8 @@ describe('genoffice capabilities', () => {
   })
 
   it.each(['tavily', 'parallel'])(
-    '%s does not advertise Genspark image search when signed in',
+    '%s does not advertise image search or generation on its own',
     async (provider) => {
-      vi.spyOn(aiSearch, 'hasGskAuth').mockReturnValue(true)
       const settings = settingsFile(tempDir(), {
         search: { provider, providers: { [provider]: { apiKey: 'test-key' } } },
       })
@@ -115,8 +114,8 @@ describe('genoffice capabilities', () => {
       const d = r.json().detail
       expect(d.search).toEqual({ available: true, via: provider })
       expect(d.image_search).toEqual({ available: false, via: null })
-      expect(d.image_generation).toEqual({ available: true, via: 'genspark' })
-      expect(d.media_analysis).toEqual({ available: true, via: 'genspark' })
+      expect(d.image_generation).toEqual({ available: false, via: null })
+      expect(d.media_analysis).toEqual({ available: false, via: null })
     },
   )
 

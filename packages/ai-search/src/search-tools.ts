@@ -19,7 +19,7 @@ export function searchOptionsFromSettings(settings: AiSettings): SearchOptions {
   // Nothing configured: fall through to the env keys and the free chain.
   if (!provider) return {}
   const cfg = settings.search!.providers[provider]
-  const key = cfg.apiKey ?? ''
+  const key = cfg.apiKey?.trim() ?? ''
   if (provider === 'custom') return { customUrl: cfg.baseUrl ?? '', customKey: key }
   if (provider === 'bocha') return { bochaKey: key, prefer: 'bocha' }
   if (provider === 'serper') return { serperKey: key }
@@ -65,7 +65,7 @@ export async function testSearchProvider(
           firecrawlKey: provider === 'firecrawl' ? apiKey : '',
           prefer: provider,
         }
-  const r = await webSearch('GenOffice', 1, options)
+  const r = await webSearch('weather', 1, options)
   if (r.method === provider) return { ok: true }
   return {
     ok: false,

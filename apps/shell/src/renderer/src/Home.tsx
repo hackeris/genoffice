@@ -21,8 +21,10 @@ import { useDismissablePopover } from '@genoffice/ui'
 import { fileCountLabel, visiblePageCount } from './counts'
 import { useI18n } from './locale'
 import type { I18n, StringKey } from './locale'
+import { markText } from '../../shared/text-marks'
+import { onFilesChanged } from './file-events'
 import { SettingsModal } from './SettingsModal'
-import type { SectionId as SettingsSectionId } from './SettingsModal'
+import type { SectionId as SettingsSectionId, SettingsTarget } from './SettingsModal'
 
 declare global {
   interface Window {
@@ -784,7 +786,7 @@ function GroupPicker({ groups, count, onCancel, onPick, onCreate, onRemove }: Gr
 // Opens the settings modal (SettingsModal.tsx): language, theme, save location,
 // update channel and the AI provider configuration.
 
-function SettingsEntry() {
+function SettingsEntry({ openSection }: { openSection?: SettingsSectionId }) {
   const { t } = useI18n()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsSection, setSettingsSection] = useState<SettingsSectionId | undefined>(undefined)
@@ -797,6 +799,13 @@ function SettingsEntry() {
     })
     return off
   }, [])
+
+  // 页内入口(如搜索结果的 rerank 设置按钮)请求打开设置
+  useEffect(() => {
+    if (!openSection) return
+    setSettingsSection(openSection)
+    setSettingsOpen(true)
+  }, [openSection])
 
   return (
     <div className="account-entry">
@@ -936,6 +945,9 @@ export function Home() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchPage, setSearchPage] = useState<FileSearchPage | null>(null)
   const [rerank, setRerank] = useState<{ key: string; result: FileSearchRerank } | null>(null)
+  // bumped when the Jev settings change so the current results are judged again (or the order dropped)
+  const [rerankSettingsTick, setRerankSettingsTick] = useState(0)
+  const [settingsRequest, setSettingsRequest] = useState<SettingsTarget | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   // IME composition: wait for the committed text instead of searching each keystroke
   const composingRef = useRef(false)
@@ -2712,7 +2724,7 @@ export function Home() {
               </div>
             )}
             <div className="recents-heading">
-              <span className="file-count">{t(fileCountKey(listTotal), { n: listTotal })}</span>
+              <span className="file-count">{fileCountLabel(listTotal, lang, t)}</span>
             </div>
             {searchActive ? (
               renderSearchHeading()
@@ -2784,7 +2796,7 @@ export function Home() {
       <aside className="sidebar">
         <div className="sidebar-divider" />
         {renderFolderPanel()}
-        <SettingsEntry />
+        <SettingsEntry openSection={settingsRequest?.section} />
       </aside>
       {selectedFolder && rootOf(selectedFolder, roots)?.usable
         ? renderFolderContent()

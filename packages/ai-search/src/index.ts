@@ -102,25 +102,30 @@ async function bochaWebSearch(
 ): Promise<WebSearchResponse | null> {
   if (!key) return null
   try {
-    const resp = await fetchWithTimeout('https://api.bochaai.com/v1/web-search', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, count: Math.min(maxResults, 50), freshness: 'noLimit' }),
-    })
-    if (!resp.ok) return null
-    const data = asRecord(await resp.json())
-    const webPages = asRecord(asRecord(data.data).webPages)
-    const raw: unknown[] = Array.isArray(webPages.value) ? webPages.value : []
-    const results: WebSearchResult[] = raw.slice(0, maxResults).map((item) => {
-      const o = asRecord(item)
-      return {
-        title: String(o.name ?? ''),
-        url: String(o.url ?? ''),
-        snippet: String(o.snippet ?? o.summary ?? ''),
-      }
-    })
-    if (!results.length) return null
-    return { results, method: 'bocha' }
+    return await fetchWithTimeout(
+      'https://api.bochaai.com/v1/web-search',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, count: Math.min(maxResults, 50), freshness: 'noLimit' }),
+      },
+      async (resp) => {
+        if (!resp.ok) return null
+        const data = asRecord(await resp.json())
+        const webPages = asRecord(asRecord(data.data).webPages)
+        const raw: unknown[] = Array.isArray(webPages.value) ? webPages.value : []
+        const results: WebSearchResult[] = raw.slice(0, maxResults).map((item) => {
+          const o = asRecord(item)
+          return {
+            title: String(o.name ?? ''),
+            url: String(o.url ?? ''),
+            snippet: String(o.snippet ?? o.summary ?? ''),
+          }
+        })
+        if (!results.length) return null
+        return { results, method: 'bocha' }
+      },
+    )
   } catch {
     return null
   }
@@ -144,25 +149,30 @@ async function customWebSearch(
     // SearXNG only answers JSON when asked; endpoints that do not know the
     // parameter ignore it.
     if (!target.searchParams.has('format')) target.searchParams.set('format', 'json')
-    const resp = await fetchWithTimeout(target.toString(), {
-      headers: {
-        Accept: 'application/json',
-        ...(key ? { Authorization: `Bearer ${key}` } : {}),
+    return await fetchWithTimeout(
+      target.toString(),
+      {
+        headers: {
+          Accept: 'application/json',
+          ...(key ? { Authorization: `Bearer ${key}` } : {}),
+        },
       },
-    })
-    if (!resp.ok) return null
-    const data = asRecord(await resp.json())
-    const raw: unknown[] = Array.isArray(data.results) ? data.results : []
-    const results: WebSearchResult[] = raw.slice(0, maxResults).map((item) => {
-      const o = asRecord(item)
-      return {
-        title: String(o.title ?? ''),
-        url: String(o.url ?? ''),
-        snippet: String(o.snippet ?? o.content ?? ''),
-      }
-    })
-    if (!results.length) return null
-    return { results, method: 'custom' }
+      async (resp) => {
+        if (!resp.ok) return null
+        const data = asRecord(await resp.json())
+        const raw: unknown[] = Array.isArray(data.results) ? data.results : []
+        const results: WebSearchResult[] = raw.slice(0, maxResults).map((item) => {
+          const o = asRecord(item)
+          return {
+            title: String(o.title ?? ''),
+            url: String(o.url ?? ''),
+            snippet: String(o.snippet ?? o.content ?? ''),
+          }
+        })
+        if (!results.length) return null
+        return { results, method: 'custom' }
+      },
+    )
   } catch {
     return null
   }

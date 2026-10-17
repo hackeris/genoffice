@@ -2,6 +2,7 @@ import {
   AI_PROVIDERS,
   activeProvider,
   customEndpointLabel,
+  defaultAiSettings,
   resolveCustomEndpoints,
   upsertCustomEndpoint,
   type AiProviderId,
@@ -72,7 +73,9 @@ export function aiModelPickerGroups(input: AiSettings, gskLoggedIn: boolean): Ai
 
 export function aiModelPickerSelection(input: AiSettings): AiModelPickerSelection {
   const settings = resolveCustomEndpoints(input)
-  const provider = activeProvider(settings)
+  // nothing active: fall back to the factory default provider so the picker
+  // still shows a group (activeProvider returns null on our BYOK-only build)
+  const provider = activeProvider(settings) ?? defaultAiSettings().provider
   const meta = AI_PROVIDERS.find((m) => m.id === provider)
   const model = settings.providers?.[provider]?.model?.trim() || meta?.defaultModel || ''
   if (provider === 'custom' && settings.customEndpoint) {

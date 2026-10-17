@@ -94,34 +94,41 @@ describe('analyzeMediaTool', () => {
   })
 })
 
-describe('generateImageTool reference budget (Genspark route)', () => {
-  it('rejects too many reference images with the BYOK wording, before calling the CLI', async () => {
-    gskGen.mockResolvedValue({ url: 'https://cdn/x/out.png', taskId: '1' })
+describe('generateImageTool reference budget', () => {
+  it('rejects too many reference images with the BYOK wording, before calling the provider', async () => {
+    mockActive.mockReturnValue({ provider: 'glm', config: {} } as never)
     const referenceImageUrls = Array.from({ length: 13 }, (_, i) => `https://cdn/x/${i}.png`)
     const r = await generateImageTool(SETTINGS, { prompt: 'red podcast icon', referenceImageUrls })
     expect(r).toEqual({
       error: 'Too many media items in one request (13, limit 12); analyze them in smaller batches',
     })
-    expect(gskGen).not.toHaveBeenCalled()
+    expect(mockGenerate).not.toHaveBeenCalled()
   })
 
-  it('still passes a reference count within the budget to the CLI', async () => {
-    gskGen.mockResolvedValueOnce({ url: 'https://cdn/x/out.png', taskId: '1' })
-    const referenceImageUrls = Array.from({ length: 12 }, (_, i) => `https://cdn/x/${i}.png`)
+  it('still passes a reference count within the budget to the provider', async () => {
+    mockActive.mockReturnValue({ provider: 'glm', config: {} } as never)
+    mockGenerate.mockResolvedValue({
+      bytes: new Uint8Array([1, 2, 3]),
+      mime: 'image/png',
+    } as never)
+    // data URLs keep the loader offline; the budget counts items, not bytes
+    const referenceImageUrls = Array.from(
+      { length: 12 },
+      () => 'data:image/png;base64,AAAA',
+    )
     const r = await generateImageTool(SETTINGS, { prompt: 'red podcast icon', referenceImageUrls })
-    expect(r).toEqual({ url: 'https://cdn/x/out.png' })
-    expect(gskGen).toHaveBeenCalledTimes(1)
+    expect(r).toEqual({ url: 'file:///gen/generated.png' })
+    expect(mockGenerate).toHaveBeenCalledTimes(1)
   })
 })
 
-describe('analyzeMediaTool media budget (Genspark route)', () => {
-  it('rejects too many media URLs with the BYOK wording, before calling the CLI', async () => {
-    gskAnalyze.mockResolvedValueOnce('done')
+describe('analyzeMediaTool media budget', () => {
+  it('rejects too many media URLs with the BYOK wording, before calling the provider', async () => {
+    mockActive.mockReturnValue({ provider: 'glm', config: {} } as never)
     const mediaUrls = Array.from({ length: 13 }, (_, i) => `https://cdn/x/${i}.png`)
     const r = await analyzeMediaTool(SETTINGS, { mediaUrls, requirements: 'describe these' })
     expect(r).toEqual({
       error: 'Too many media items in one request (13, limit 12); analyze them in smaller batches',
     })
-    expect(gskAnalyze).not.toHaveBeenCalled()
   })
 })

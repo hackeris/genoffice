@@ -312,12 +312,10 @@ export const tMain = createI18n({
     errImageNoText:
       'Tệp đính kèm hình ảnh không có văn bản; hình ảnh được gửi cùng với tin nhắn của người dùng',
     errNotImage: 'loại hình ảnh không được hỗ trợ',
-    errGskNotLoggedIn:
-      'Chưa đăng nhập vào Genspark: nhấp vào “Đăng nhập vào Genspark” bên dưới, đăng nhập, sau đó thử lại',
     errNoApiKey: 'Chưa cấu hình khóa API cho {provider}',
     errNoModel: 'Chưa cấu hình tên mô hình',
-    errGskCli:
-      'gsk chưa đăng nhập: trước tiên hãy chạy gsk login để đăng nhập vào tài khoản Genspark của bạn',
+    errAiProviderUnset:
+      'Chưa cấu hình dịch vụ mô hình AI: hãy đến phần Cài đặt để chọn nhà cung cấp và nhập khóa API',
     errNoDeckAppend:
       'Không có bản trình bày để nối thêm vào (thiếu phiên làm việc). Hãy tạo trang đầu tiên với mode:"replace" hoặc thêm trang bằng các công cụ gốc.',
     errAppendFailed: 'Nối thêm thất bại: {reason}',

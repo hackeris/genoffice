@@ -63,7 +63,6 @@ describe('Parallel free Search MCP', () => {
   it.each([false, true])('searches anonymously and maps results (SSE: %s)', async (sse) => {
     const { requests } = mockServer({ content: [], structuredContent: payload }, sse)
     const r = await webSearch('office tools', 1, {
-      useGsk: false,
       prefer: 'parallel',
       parallelKey: '',
     })
@@ -97,7 +96,6 @@ describe('Parallel free Search MCP', () => {
     settings.search!.provider = 'parallel'
     const { requests } = mockServer({ content: [], structuredContent: payload })
     expect(searchOptionsFromSettings(settings)).toMatchObject({
-      useGsk: false,
       prefer: 'parallel',
       parallelKey: '',
     })

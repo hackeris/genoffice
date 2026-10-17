@@ -374,6 +374,10 @@ export interface HomeApi {
   starPromptShouldShow(): Promise<StarPromptShow>
   /** user reacted to the star prompt; 'starred' resolves it permanently */
   starPromptAction(action: StarPromptAction): Promise<void>
+  /** stored author name plus the system-derived fallback shown while unset */
+  getAuthorName(): Promise<AuthorNameSetting>
+  /** persist the author name; returns the stored-plus-fallback pair */
+  setAuthorName(value: string): Promise<AuthorNameSetting>
   /** AI settings (userData/ai-settings.json, shared by every editor) */
   getAiSettings(): Promise<AiSettings>
   /** persist AI settings; every renderer gets ai:settings-changed and re-reads */
@@ -568,4 +572,6 @@ export const HOME_CHANNELS = {
   githubStars: 'home:github-stars',
   starPromptShouldShow: 'home:star-prompt-should-show',
   starPromptAction: 'home:star-prompt-action',
+  getAuthorName: 'home:get-author-name',
+  setAuthorName: 'home:set-author-name',
 } as const
