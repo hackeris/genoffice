@@ -1664,7 +1664,6 @@ export function Home() {
             <span className="quick-text">
               <span className="quick-title-row">
                 <span className="quick-title">{item.title}</span>
-                <span className="ai-chip">AI</span>
               </span>
               <span className="quick-sub">{item.sub}</span>
             </span>
