@@ -660,11 +660,7 @@ export function AiPanel({
         onPointerDown={startResize}
         role="separator"
         aria-orientation="vertical"
-<<<<<<< HEAD
         aria-label={t('ribbonAiAssistant')}
-=======
-        aria-label="AI"
->>>>>>> 828efc3e (品牌替换:GenOffice/Genspark 用户可见面全量换 Sota Office/AI)
       />
       <header className="ai-panel-header">
         <span className="ai-panel-title">

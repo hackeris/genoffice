@@ -111,7 +111,6 @@ export function readAiSettingsFile(path: string): AiSettings {
   return resolveAiSettings(stored, defaultAiSettings())
 }
 
-<<<<<<< HEAD
 type Gate = { error: string } | null
 
 /** no allowlist configured: the extension check alone decides */
