@@ -17,7 +17,6 @@
     "packages/*"
   ],
   "scripts": {
-    "postinstall": "install-electron",
     "format": "node tools/format-changed.mjs --write",
     "format:check": "node tools/format-changed.mjs --check",
     "check:theme-colors": "node tools/check-theme-colors.mjs",
