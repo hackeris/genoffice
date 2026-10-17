@@ -619,7 +619,8 @@ export function App() {
   } | null>(null)
   const [_recent, setRecent] = useState<string[]>([])
   const [settings, setSettings] = useState<AiSettings>(DEFAULT_SETTINGS)
-  const [showAi, setShowAi] = useState(() => localStorage.getItem('aidocs.showAi') !== '0')
+  // AI 侧边栏默认收起,点开后记住(存过 '1' 才展开)
+  const [showAi, setShowAi] = useState(() => localStorage.getItem('aidocs.showAi') === '1')
   const [spellcheck, setSpellcheck] = useState(spellcheckEnabled)
   /** Increments on every open/new document: AiPanel remounts by key to reset the conversation and history (save path changes don't bump it, so the session continues) */
   const [aiPanelKey, setAiPanelKey] = useState(0)

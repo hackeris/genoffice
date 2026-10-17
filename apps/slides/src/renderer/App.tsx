@@ -424,7 +424,8 @@ export function App() {
   useEffect(() => {
     window.slidesApi.setAutoSavePref?.(autoSave)
   }, [autoSave])
-  const [showAi, setShowAi] = useState(() => localStorage.getItem('ai-slides-show-ai') !== '0')
+  // AI 侧边栏默认收起,点开后记住(存过 '1' 才展开)
+  const [showAi, setShowAi] = useState(() => localStorage.getItem('ai-slides-show-ai') === '1')
   const [showFormat, setShowFormat] = useState(false)
   const [showBgFormat, setShowBgFormat] = useState(false)
   const [aiSettings, setAiSettings] = useState<AiSettings | null>(null)

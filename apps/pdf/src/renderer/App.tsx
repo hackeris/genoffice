@@ -339,8 +339,9 @@ export default function App() {
     window.addEventListener('pointerup', onUp)
   }
   // Persisted so a closed AI panel stays closed on next launch (docs/slides parity)
+  // AI 侧边栏默认收起,点开后记住(存过 '1'——即未收起——才展开)
   const [aiCollapsed, setAiCollapsed] = useState(
-    () => localStorage.getItem('genoffice-pdf-show-ai') === '0',
+    () => localStorage.getItem('genoffice-pdf-show-ai') !== '1',
   )
   useEffect(() => {
     localStorage.setItem('genoffice-pdf-show-ai', aiCollapsed ? '0' : '1')
