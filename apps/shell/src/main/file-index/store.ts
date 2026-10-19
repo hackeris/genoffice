@@ -110,11 +110,21 @@ export class FileIndexStore {
   constructor(dbPath: string) {
     // 运行时加载:鸿蒙 Electron fork(Node 22 构建未编入 sqlite binding)上
     // 静态 import 会在 bundle 求值期抛 "No such binding: sqlite" 炸掉整个主进程;
-    // 挪进构造函数后由调用方的 try/catch 接住,文件索引降级不可用,应用正常起
-    const { DatabaseSync } = require('node:sqlite') as {
-      DatabaseSync: new (path: string) => DatabaseSync
+    // fork 上回退到 sota-sqlite(纯 C 绑定,API 与 node:sqlite 的子集兼容,
+    // binding 由壳工程 shim 预加载挂全局——C++ addon 在该 fork 上不可活,见
+    // vendor/sqlite/build.sh 文件头),两端都不可用时由调用方的 try/catch
+    // 接住,文件索引降级不可用,应用正常起
+    let DatabaseSyncCtor: new (path: string) => DatabaseSync
+    try {
+      ;({ DatabaseSync: DatabaseSyncCtor } = require('node:sqlite') as {
+        DatabaseSync: new (path: string) => DatabaseSync
+      })
+    } catch {
+      ;({ DatabaseSync: DatabaseSyncCtor } = require('sota-sqlite') as {
+        DatabaseSync: new (path: string) => DatabaseSync
+      })
     }
-    this.db = new DatabaseSync(dbPath)
+    this.db = new DatabaseSyncCtor(dbPath)
     this.db.exec('PRAGMA journal_mode = WAL')
     this.db.exec(SCHEMA)
     if (this.meta('tokenizer') !== String(TOKENIZER_VERSION)) {

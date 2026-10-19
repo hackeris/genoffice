@@ -41,3 +41,8 @@ __pycache__/
 # One-off verification tests kept while chasing a fix; promote to a real test
 # file (or delete) instead of committing them under this name.
 _scratch-*
+
+# vendored sota-sqlite(纯 C node:sqlite 兼容绑定):交叉编译产物(build.sh 生成,
+# 不入库;sqlite3 amalgamation 源在主仓 thirdparty/node-sqlite submodule)
+/apps/shell/vendor/sqlite/*.node
+/apps/shell/vendor/sqlite/build-ohos-tmp/

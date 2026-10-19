@@ -1,0 +1,7 @@
+{
+  "name": "sota-sqlite",
+  "version": "1.0.0",
+  "description": "pure-C node:sqlite-compatible binding for the ohos Electron fork: napi via dlsym from libelectron.so (dlopen-time napi_* interposition by libace_napi.z.so makes linked symbols unsafe), sqlite3 amalgamation bundled from photostructure/node-sqlite@3.3.0",
+  "main": "./index.cjs",
+  "license": "MIT"
+}

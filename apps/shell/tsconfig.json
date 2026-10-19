@@ -8,6 +8,7 @@
     // node_modules would otherwise typecheck against another checkout) —
     // same mapping as packages/pdf2docx/tsconfig.json
     "paths": {
+      "sota-sqlite": ["./vendor/sqlite/sota-sqlite.d.cts"],
       "@genoffice/docx-engine": ["../../packages/docx-engine/src/index.ts"],
       "@genoffice/font-metrics": ["../../packages/font-metrics/src/index.ts"],
       "@genoffice/electron-utils/headless-export": [
