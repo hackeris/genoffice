@@ -7,7 +7,6 @@ import {
   ShapePreview,
   useDismissablePopover,
   useRibbonCollapse,
-  aiPanelInitiallyOpen,
   rememberAiPanelOpen,
   useAiSidebarEnabled,
   type AiTokenUsageView,
@@ -552,9 +551,10 @@ export function ExcelShell({
     compact: t('appRibbonCompact'),
     expandFull: t('appRibbonExpand'),
   })
-  // Persisted so a closed AI panel stays closed on next launch (docs/slides parity)
+  // Persisted so a closed AI panel stays closed on next launch (docs/slides parity):
+  // default collapsed like the other editors — aiPanelInitiallyOpen defaults open
   const [isCopilotOpen, setIsCopilotOpen] = useState(() =>
-    aiPanelInitiallyOpen('ai-sheets-show-ai'),
+    localStorage.getItem('ai-sheets-show-ai') === '1',
   )
   // the sidebar switch is a soft hide; it closes the panel when it turns off
   const aiSidebarEnabled = useAiSidebarEnabled(setIsCopilotOpen)
