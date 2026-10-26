@@ -1,6 +1,5 @@
 import { execSync, spawn } from 'node:child_process'
 import {
-  copyFileSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -4735,6 +4734,17 @@ function registerHomeIpc(): void {
   })
   ipcMain.handle(HOME_CHANNELS.getLanguage, (): Lang => currentLang())
 
+  ipcMain.handle(HOME_CHANNELS.thirdPartyNotices, (): string => {
+    const path = app.isPackaged
+      ? join(process.resourcesPath, 'THIRD-PARTY-NOTICES.txt')
+      : join(app.getAppPath(), 'build', 'THIRD-PARTY-NOTICES.txt')
+    try {
+      return readFileSync(path, 'utf8')
+    } catch {
+      return ''
+    }
+  })
+
   ipcMain.handle(HOME_CHANNELS.setLanguage, (_event, lang: unknown) => {
     if (!isLang(lang) || lang === currentLang()) return
     persistLang(lang)
@@ -6311,34 +6321,13 @@ ipcMain.handle(PDF_CHANNELS.convertOffice, async (e, format: unknown) => {
   else if (format === 'pptx') await exportPdfAsPptxLocal()
 })
 
-function openThirdPartyNotices(): Promise<string> {
-  const path = app.isPackaged
-    ? join(process.resourcesPath, 'THIRD-PARTY-NOTICES.txt')
-    : join(app.getAppPath(), 'build', 'THIRD-PARTY-NOTICES.txt')
-  // 文件缺失时给可见反馈(shell.openPath 打不开只会静默返回错误串,用户看就是"空的")
-  if (!existsSync(path)) {
-    return import('electron').then(({ dialog }) =>
-      dialog.showMessageBox({
-        type: 'info',
-        title: tm('thirdPartyNotices'),
-        message: tm('thirdPartyNotices'),
-        detail: path,
-        buttons: ['OK'],
-        defaultId: 0,
-        cancelId: 0,
-      }).then(() => ''),
-    )
-  }
-  // OHOS:resfile 在应用私有沙箱里,系统查看器读不到(打开是空白)——
-  // 拷到共享的 Documents/Smart Office/ 再交给系统打开
-  try {
-    const shared = join(app.getPath('documents'), 'Smart Office')
-    mkdirSync(shared, { recursive: true })
-    const dest = join(shared, 'THIRD-PARTY-NOTICES.txt')
-    copyFileSync(path, dest)
-    return shell.openPath(dest)
-  } catch {
-    return shell.openPath(path)
+/** 帮助 > 第三方软件声明:切回首页广播打开独立的声明弹窗。
+ * 不用系统查看器:resfile 在应用私有沙箱里它读不到,拷去公共目录又会给用户的
+ * Documents 留文件;文本改由 home:third-party-notices 按需取,弹窗内直接呈现。 */
+function openThirdPartyNotices(): void {
+  tabManager?.openHomeTab()
+  for (const wc of webContents.getAllWebContents()) {
+    if (!wc.isDestroyed()) wc.send(HOME_CHANNELS.openNotices)
   }
 }
 

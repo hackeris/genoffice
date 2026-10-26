@@ -1772,9 +1772,17 @@ export interface SettingsModalProps {
   onFileSearchChange?: () => void
   /** 外部入口(如首页 rerank 按钮)指定打开的区块与焦点块 */
   target?: SettingsTarget | null
+  /** 「关于」区里第三方声明链接的去处:独立声明弹窗由首页承载 */
+  onOpenNotices?: () => void
 }
 
-export function SettingsModal({ onClose, initialSection, onFileSearchChange, target }: SettingsModalProps) {
+export function SettingsModal({
+  onClose,
+  initialSection,
+  onFileSearchChange,
+  target,
+  onOpenNotices,
+}: SettingsModalProps) {
   const { lang, setLang, t } = useI18n()
   const [section, setSection] = useState<SectionId>(initialSection ?? 'aiModel')
   useEffect(() => {
@@ -2159,7 +2167,7 @@ export function SettingsModal({ onClose, initialSection, onFileSearchChange, tar
                 <h3 className="set-pane-title">{t('setSecAbout')}</h3>
                 <Field label={t('versionLabel')} value={appVersion || '—'} />
                 {/* 上游开源致谢(开源许可义务):均为专有名,不随语言变化;
-                    链接经 openExternal 用系统浏览器打开;完整许可文本见 帮助 > 第三方软件声明 */}
+                    链接经 openExternal 用系统浏览器打开;完整许可文本见「第三方软件声明」弹窗 */}
                 <div className="set-field-desc" style={{ padding: '2px 0 0', lineHeight: 1.7 }}>
                   <div>
                     Based on{' '}
@@ -2188,6 +2196,18 @@ export function SettingsModal({ onClose, initialSection, onFileSearchChange, tar
                       Electron for OpenHarmony
                     </a>
                     {' '}— MIT · Chromium
+                  </div>
+                  <div>
+                    <a
+                      href="#notices"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        onOpenNotices?.()
+                      }}
+                      style={{ color: 'inherit', textDecoration: 'underline' }}
+                    >
+                      {t('thirdPartyNotices')}
+                    </a>
                   </div>
                 </div>
                 {/* 更新通道在鸿蒙分发下无意义，先隐藏；代码保留，恢复时去掉本包裹即可 */}

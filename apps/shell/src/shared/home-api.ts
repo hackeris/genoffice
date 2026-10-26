@@ -299,6 +299,10 @@ export interface HomeApi {
   onFolderChanged(handler: (dirs: string[]) => void): () => void
   /** 主进程请求打开设置弹窗(如帮助菜单的「关于」直达),参数为初始区块 id */
   onOpenSettings(handler: (section: string) => void): () => void
+  /** 主进程请求打开第三方声明弹窗(帮助菜单项) */
+  onOpenNotices(handler: () => void): () => void
+  /** 第三方软件声明全文(resfile 内打包的 THIRD-PARTY-NOTICES.txt;读不到时为空串) */
+  getThirdPartyNotices(): Promise<string>
   /** 用系统默认浏览器打开 http(s) 链接(渲染进程内不可直接导航外链) */
   openExternal(url: string): Promise<void>
   /** current UI language (persisted in userData/app-settings.json) */
@@ -542,6 +546,8 @@ export const HOME_CHANNELS = {
   deleteFolder: 'home:folder-delete',
   folderChanged: 'home:folder-changed',
   openSettings: 'home:open-settings',
+  openNotices: 'home:open-notices',
+  thirdPartyNotices: 'home:third-party-notices',
   openExternal: 'home:open-external',
   getLanguage: 'home:get-language',
   setLanguage: 'home:set-language',

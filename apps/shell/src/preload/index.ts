@@ -287,6 +287,14 @@ const homeApi: HomeApi = {
     ipcRenderer.on(HOME_CHANNELS.openSettings, listener)
     return () => ipcRenderer.removeListener(HOME_CHANNELS.openSettings, listener)
   },
+  onOpenNotices(handler) {
+    const listener = () => handler()
+    ipcRenderer.on(HOME_CHANNELS.openNotices, listener)
+    return () => ipcRenderer.removeListener(HOME_CHANNELS.openNotices, listener)
+  },
+  async getThirdPartyNotices() {
+    return ipcRenderer.invoke(HOME_CHANNELS.thirdPartyNotices)
+  },
   async openExternal(url) {
     await ipcRenderer.invoke(HOME_CHANNELS.openExternal, url)
   },

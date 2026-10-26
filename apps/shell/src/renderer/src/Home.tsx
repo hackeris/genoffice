@@ -25,6 +25,7 @@ import { markText } from '../../shared/text-marks'
 import { onFilesChanged } from './file-events'
 import { SettingsModal } from './SettingsModal'
 import type { SectionId as SettingsSectionId, SettingsTarget } from './SettingsModal'
+import { NoticesModal } from './NoticesModal'
 
 declare global {
   interface Window {
@@ -786,7 +787,13 @@ function GroupPicker({ groups, count, onCancel, onPick, onCreate, onRemove }: Gr
 // Opens the settings modal (SettingsModal.tsx): language, theme, save location,
 // update channel and the AI provider configuration.
 
-function SettingsEntry({ openSection }: { openSection?: SettingsSectionId }) {
+function SettingsEntry({
+  openSection,
+  onOpenNotices,
+}: {
+  openSection?: SettingsSectionId
+  onOpenNotices?: () => void
+}) {
   const { t } = useI18n()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsSection, setSettingsSection] = useState<SettingsSectionId | undefined>(undefined)
@@ -812,6 +819,7 @@ function SettingsEntry({ openSection }: { openSection?: SettingsSectionId }) {
       {settingsOpen && (
         <SettingsModal
           initialSection={settingsSection}
+          onOpenNotices={onOpenNotices}
           onClose={() => setSettingsOpen(false)}
         />
       )}
@@ -948,6 +956,12 @@ export function Home() {
   // bumped when the Jev settings change so the current results are judged again (or the order dropped)
   const [rerankSettingsTick, setRerankSettingsTick] = useState(0)
   const [settingsRequest, setSettingsRequest] = useState<SettingsTarget | null>(null)
+  // 帮助菜单/「关于」区要的第三方声明:独立弹窗,与设置弹窗互不嵌套
+  const [noticesOpen, setNoticesOpen] = useState(false)
+  useEffect(() => {
+    const off = window.aiOffice.onOpenNotices?.(() => setNoticesOpen(true))
+    return off
+  }, [])
   const searchInputRef = useRef<HTMLInputElement>(null)
   // IME composition: wait for the committed text instead of searching each keystroke
   const composingRef = useRef(false)
@@ -2796,11 +2810,15 @@ export function Home() {
       <aside className="sidebar">
         <div className="sidebar-divider" />
         {renderFolderPanel()}
-        <SettingsEntry openSection={settingsRequest?.section} />
+        <SettingsEntry
+          openSection={settingsRequest?.section}
+          onOpenNotices={() => setNoticesOpen(true)}
+        />
       </aside>
       {selectedFolder && rootOf(selectedFolder, roots)?.usable
         ? renderFolderContent()
         : renderGlobalContent()}
+      {noticesOpen && <NoticesModal onClose={() => setNoticesOpen(false)} />}
       {confirmDelete && (
         <div className="modal-overlay" onClick={() => setConfirmDelete(null)}>
           <div
