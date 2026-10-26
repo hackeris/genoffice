@@ -8,11 +8,15 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs'
-import { copyFile, open, rename, unlink, writeFile } from 'node:fs/promises'
+import { copyFile, open, rename, stat, unlink, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 
 /** Transient Windows codes: antivirus/indexer briefly locks the rename target. */
 const RETRYABLE_RENAME_CODES = new Set(['EPERM', 'EACCES', 'EBUSY'])
+/** Refusals to create the sibling temp at all: the directory itself is not
+ *  writable to us (save-picker grants cover the picked file only), so the
+ *  atomic half cannot even start and the write must proceed in place. */
+const REFUSED_TEMP_CODES = new Set(['EPERM', 'EACCES', 'EROFS'])
 const RENAME_RETRY_DELAYS_MS = [50, 100, 200, 400]
 
 /**
@@ -72,18 +76,34 @@ function syncFileBestEffortSync(path: string): void {
  */
 export async function atomicWriteFile(filePath: string, data: Buffer): Promise<void> {
   const tmp = tempPathBeside(filePath)
+  let staged = false
   try {
     await writeFile(tmp, data)
+    staged = true
     await syncFileBestEffort(tmp)
   } catch (error) {
     await unlink(tmp).catch(() => {})
-    throw error
+    // A save-picker target on OHOS carries write permission for the picked
+    // file alone, not its directory: creating the sibling temp is refused
+    // outright. Skip the atomic half and write in place, like the rename
+    // fallback below does — but only when nothing can be lost that way: the
+    // picker pre-creates an empty target, so there is no old content a failed
+    // half-write could clobber. A refused temp beside a non-empty target
+    // keeps failing the save, as an in-place write there has no backup.
+    if (!REFUSED_TEMP_CODES.has(errorCode(error))) throw error
+    const existing = await stat(filePath).catch((statError: NodeJS.ErrnoException) => {
+      if (statError.code === 'ENOENT') return null
+      throw statError
+    })
+    if (existing && existing.size > 0) throw error
   }
-  try {
-    await renameWithRetry(tmp, filePath)
-    return
-  } catch {
-    // fall through to the in-place write
+  if (staged) {
+    try {
+      await renameWithRetry(tmp, filePath)
+      return
+    } catch {
+      // fall through to the in-place write
+    }
   }
   // Keep the completed temp until the fallback lands: if that write fails
   // or the process dies, the new bytes still exist somewhere on disk.

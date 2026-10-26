@@ -186,24 +186,51 @@ export async function saveWorkbookViaSidecar(
       ...(await writePlanContents(workDir, 'add', plan.added)),
       ...(await writePlanContents(workDir, 'add-bin', plan.addedBinary)),
     ]
-    const result = saveArchiveResultSchema.parse(
-      await request.client.saveArchive({
-        sourcePath: request.sourcePath,
-        targetPath: temporaryTarget,
-        replacements,
-        removals: plan.removedEntries,
-        additions,
-      }),
-    )
-
-    // The source manifest was read before planning; if the file changed on
-    // disk in between, the save's own before-manifest exposes the drift.
-    if (!manifestsEqual(manifest, result.beforeEntries)) {
-      throw new Error('The workbook changed on disk while saving — aborted.')
+    // Reassembly + the manifest checks the save is judged by (shared by the
+    // normal and the permission-fallback pass below).
+    const reassembleInto = async (archivePath: string): Promise<void> => {
+      const result = saveArchiveResultSchema.parse(
+        await request.client.saveArchive({
+          sourcePath: request.sourcePath,
+          targetPath: archivePath,
+          replacements,
+          removals: plan.removedEntries,
+          additions,
+        }),
+      )
+      // The source manifest was read before planning; if the file changed on
+      // disk in between, the save's own before-manifest exposes the drift.
+      if (!manifestsEqual(manifest, result.beforeEntries)) {
+        throw new Error('The workbook changed on disk while saving — aborted.')
+      }
+      assertManifestPreserved(plan, result.beforeEntries, result.afterEntries)
     }
-    assertManifestPreserved(plan, result.beforeEntries, result.afterEntries)
 
-    await promoteFileAtomically(temporaryTarget, request.targetPath)
+    try {
+      await reassembleInto(temporaryTarget)
+      await promoteFileAtomically(temporaryTarget, request.targetPath)
+    } catch (error: unknown) {
+      // A directory the process cannot create files in (a save-picker grant
+      // covers the picked file alone, not its directory) refuses the sidecar's
+      // temp create outright. Sidecar failures cross the socket as plain
+      // Errors carrying the OS error text — match the message; an errno code
+      // never survives that hop. Reassemble into the private work dir instead
+      // (writable to the sidecar) and copy the finished bytes over the picked
+      // file in place, which the grant does allow.
+      if (!PERMISSION_REFUSED_RE.test(error instanceof Error ? error.message : String(error))) {
+        throw error
+      }
+      // the refused pass may have left a partial archive beside the target —
+      // the outer catch below no longer runs on this recovered path
+      await rm(temporaryTarget, { force: true })
+      const fallbackTarget = join(workDir, `.${randomUUID()}.tmp.xlsx`)
+      try {
+        await reassembleInto(fallbackTarget)
+        await copyOverLockedTarget(fallbackTarget, request.targetPath)
+      } finally {
+        await rm(fallbackTarget, { force: true })
+      }
+    }
     return {
       touchedEntries: plan.touchedEntries,
       removedEntries: plan.removedEntries,
@@ -369,6 +396,10 @@ export function assertManifestPreserved(
 
 /** Transient Windows codes: antivirus/indexer/cloud sync briefly locks a path. */
 const RETRYABLE_RENAME_CODES = new Set(['EPERM', 'EACCES', 'EBUSY'])
+/** Permission refusals reported by the OS layer, matched against sidecar error
+ *  text (Rust io::Error Display, e.g. "Operation not permitted (os error 1)"). */
+const PERMISSION_REFUSED_RE = /operation not permitted \(os error 1\)|permission denied \(os error 13\)/i
+
 const RENAME_RETRIES = 4
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -410,7 +441,10 @@ async function copyOverLockedTarget(temporaryPath: string, path: string): Promis
     if (error.code === 'ENOENT') return null
     throw error
   })
-  const backup = before ? join(tmpdir(), recoveredName(path, randomUUID())) : null
+  // An empty target has nothing to restore; skipping its backup also avoids
+  // demanding read permission where a save-picker grant may be write-only.
+  const backup =
+    before && before.size > 0 ? join(tmpdir(), recoveredName(path, randomUUID())) : null
   if (backup) {
     try {
       await copyFile(path, backup)
