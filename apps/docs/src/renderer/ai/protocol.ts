@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/core'
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { TextSelection } from '@tiptap/pm/state'
+import type { Transaction } from '@tiptap/pm/state'
 import {
   TABLE_HEADER_FILL,
   type Block,
@@ -24,8 +25,18 @@ import {
 import { opSignatures } from './ops'
 import { pageSetupContextLines, type AiSectionState } from './page-setup'
 import { listRevisionEntries } from './revision-ops'
+import { changedRangeOf } from '../editor/touched-blocks'
+import { recordAiWrite } from './last-write'
 
 export { blockRangePositions, isTrackedDeleted, liveText }
+
+/** Dispatch an AI write and anchor the floating provenance chip to the range
+ * it touched (tracked and untracked paths alike; final-doc coordinates). */
+function dispatchAiWrite(editor: Editor, tr: Transaction): void {
+  const written = changedRangeOf(tr)
+  if (written) recordAiWrite(written.from, written.to)
+  editor.view.dispatch(tr)
+}
 
 /**
  * Agent protocol: the model runs a multi-turn tool-use loop — it reads the document skeleton
@@ -1315,7 +1326,7 @@ export function replaceBlockRange(
       tr.addMark(to, to + inserted, ins.create({ author: track.author, date }))
       tr.addMark(from, to, del.create({ author: track.author, date }))
     }
-    editor.view.dispatch(tr)
+    dispatchAiWrite(editor, tr)
     return true
   }
   if (track) {
@@ -1350,10 +1361,10 @@ export function replaceBlockRange(
     )
     const tr = editor.state.tr.replaceWith(from, to, [...oldNodes, ...inserted])
     tr.setMeta(TRACK_IGNORE, true)
-    editor.view.dispatch(tr)
+    dispatchAiWrite(editor, tr)
     return true
   }
-  editor.view.dispatch(editor.state.tr.replaceWith(from, to, pmNodes))
+  dispatchAiWrite(editor, editor.state.tr.replaceWith(from, to, pmNodes))
   return true
 }
 
@@ -1387,7 +1398,7 @@ export function replaceInlineRange(
     const block = tr.doc.nodeAt(blockPos)
     if (block) tr.setNodeMarkup(blockPos, undefined, { ...block.attrs, aiChanged: true })
   }
-  editor.view.dispatch(tr)
+  dispatchAiWrite(editor, tr)
 }
 
 /** insert the parsed nodes after the given top-level block index */
@@ -1423,6 +1434,6 @@ export function insertBlocksAfter(
     }
     tr.setMeta(TRACK_IGNORE, true)
   }
-  editor.view.dispatch(tr)
+  dispatchAiWrite(editor, tr)
   return true
 }

@@ -28,6 +28,7 @@ import {
   type PasteRestore,
 } from '../editor/paste-options'
 import { IconPaste } from './icons'
+import { changedRangeOf } from '../editor/touched-blocks'
 
 type ChipState = {
   payload: PastePayload
@@ -48,26 +49,6 @@ const MODE_KEYS: Array<[PasteMode, StringKey]> = [
 const GAP = 6
 const EDGE = 8
 const REVERT_META = 'pasteOptionsRevert'
-
-/** The range a transaction's steps touched, in final-doc coordinates. */
-function changedRangeOf(tr: Transaction): { from: number; to: number } | null {
-  let from = Infinity
-  let to = -Infinity
-  const maps = tr.mapping.maps
-  maps.forEach((stepMap, index) => {
-    stepMap.forEach((_oldFrom, _oldTo, newFrom, newTo) => {
-      let start = newFrom
-      let end = newTo
-      for (let later = index + 1; later < maps.length; later++) {
-        start = maps[later]!.map(start, 1)
-        end = maps[later]!.map(end, -1)
-      }
-      from = Math.min(from, start)
-      to = Math.max(to, end)
-    })
-  })
-  return from <= to ? { from, to } : null
-}
 
 export function PasteOptionsChip({ editor }: { editor: Editor }) {
   const { t } = useI18n()

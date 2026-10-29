@@ -5,6 +5,7 @@ import {
   type AiModelPickerBridge,
   AiQueueStrip,
   AI_QUEUE_LABELS,
+  AiGeneratedBadge,
   AiUsageChip,
   addTokenUsage,
   type AiTokenUsageView,
@@ -58,6 +59,7 @@ import {
 } from './edit-queue'
 import { setInactiveSelectionShown } from '../editor/inactive-selection'
 import { applyRevisionsBy } from '../editor/revisions'
+import { clearLastAiWrite } from './last-write'
 import { DOCS_CONTINUE_INSTRUCTION } from './continuation'
 import { waitForFullContent } from '../phased-content'
 import { currentDocGeneration } from '../file-actions'
@@ -1278,6 +1280,8 @@ export function AiPanel({
   const acceptChanges = () => {
     applyRevisionsBy(editorRef.current, AI_REVISION_AUTHOR, 'accept')
     clearAiHighlights()
+    // revisions resolved: the provenance chip has nothing left to point at
+    clearLastAiWrite()
   }
 
   const toggleTrackChanges = () => {
@@ -1289,6 +1293,8 @@ export function AiPanel({
   }
 
   const rollback = (entryIdx: number, snapshot: PmNode) => {
+    // the whole run is reverted: its provenance anchor points at nothing real
+    clearLastAiWrite()
     editor
       .chain()
       .setMeta(TABLE_TRAILING_SKIP, true)
@@ -1429,6 +1435,11 @@ export function AiPanel({
                     <Markdown text={entry.text} navs={[docNav, fileNav]} />
                   </div>
                 )}
+                {entry.role === 'assistant' && entry.text && !entry.error && (
+                  <div className="ai-message-usage">
+                    <AiGeneratedBadge lang={lang} />
+                  </div>
+                )}
               </div>
             ))}
             <div className="ai-history-sep">{t('aiHistorySep')}</div>
@@ -1503,9 +1514,10 @@ export function AiPanel({
               ) : (
                 <span dir="auto">{entry.text}</span>
               )}
-              {entry.role === 'assistant' && entry.usage && (
+              {entry.role === 'assistant' && (entry.usage || (!!entry.text && !entry.error)) && (
                 <div className="ai-message-usage">
-                  <AiUsageChip usage={entry.usage} lang={lang} />
+                  {!entry.error && !!entry.text && <AiGeneratedBadge lang={lang} />}
+                  {entry.usage && <AiUsageChip usage={entry.usage} lang={lang} />}
                 </div>
               )}
               {entry.tools && entry.tools.length > 0 && <ToolChipList tools={entry.tools} />}

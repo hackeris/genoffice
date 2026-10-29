@@ -11,6 +11,7 @@ import {
 } from '@genoffice/agent-core'
 import {
   AiComposer,
+  AiGeneratedBadge,
   AiTypingIndicator,
   AiUsageChip,
   addTokenUsage,
@@ -324,9 +325,10 @@ export function KbAskPanel({
             ) : m.streaming ? (
               <AiTypingIndicator label={t('askHintBusy')} />
             ) : null}
-            {m.role === 'assistant' && m.usage && (
+            {m.role === 'assistant' && (m.usage || (!!m.text && !m.isError && !m.streaming)) && (
               <div className="ai-message-usage">
-                <AiUsageChip usage={m.usage} lang={lang} />
+                {!m.isError && !m.streaming && !!m.text && <AiGeneratedBadge lang={lang} />}
+                {m.usage && <AiUsageChip usage={m.usage} lang={lang} />}
               </div>
             )}
             {m.role === 'assistant' && m.text && !m.streaming && !m.isError && (

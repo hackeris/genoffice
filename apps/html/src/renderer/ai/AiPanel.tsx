@@ -17,6 +17,7 @@ import {
   AI_QUEUE_LABELS,
   AiScopeQuote,
   AiTypingIndicator,
+  AiGeneratedBadge,
   AiUsageChip,
   addTokenUsage,
   createFileNav,
@@ -1343,9 +1344,10 @@ export function AiPanel({
                 )
               )}
               {hasTools && <ToolChipList tools={entry.tools!} />}
-              {entry.usage && (
+              {(entry.usage || (!!entry.text && !entry.isError)) && (
                 <div className="ai-message-usage">
-                  <AiUsageChip usage={entry.usage} lang={lang} />
+                  {!entry.isError && !!entry.text && <AiGeneratedBadge lang={lang} />}
+                  {entry.usage && <AiUsageChip usage={entry.usage} lang={lang} />}
                 </div>
               )}
               {showToolbar && (

@@ -53,6 +53,7 @@ import {
   AiQueueStrip,
   AI_QUEUE_LABELS,
   AiScopeQuote,
+  AiGeneratedBadge,
   AiUsageChip,
   Markdown,
   addTokenUsage,
@@ -295,6 +296,8 @@ interface AiPanelProps {
   onUndo?: () => void
   /** Callback to update the path after AI generation lands on disk (title bar sync) */
   onPathChange?: (path: string) => void
+  /** Pages AI tools just wrote (0-based); App anchors the floating "AI-generated" chip to them */
+  onWrittenPages?: (pages: number[]) => void
   /** Flush pending editor state (e.g. the speaker-notes draft) right before an AI run edits the deck, so a stale draft cannot overwrite what the run writes */
   onBeforeRun?: () => Promise<void> | void
   /** Generation progress callback (for the canvas top progress bar) */
@@ -395,6 +398,7 @@ export function AiPanel({
   onExpand,
   onCollapse,
   onPathChange,
+  onWrittenPages,
   onBeforeRun,
   onDeckProgress,
   currentFilePath,
@@ -542,6 +546,8 @@ export function AiPanel({
   onBeforeRunRef.current = onBeforeRun
   const onPathChangeRef = useRef(onPathChange)
   onPathChangeRef.current = onPathChange
+  const onWrittenPagesRef = useRef(onWrittenPages)
+  onWrittenPagesRef.current = onWrittenPages
   const onDeckProgressRef = useRef(onDeckProgress)
   onDeckProgressRef.current = onDeckProgress
   const settingsRef = useRef(settings)
@@ -940,6 +946,7 @@ export function AiPanel({
       // canvas right now is unrelated and would only compete with them
       getSelectedIds: () => (queueRunResolverRef.current ? [] : selectedRef.current),
       applySlide: (i, updated) => applySlideRef.current(i, updated),
+      onPagesWritten: (pages) => onWrittenPagesRef.current?.(pages),
       applyDeck: (all, goTo) => applyDeckRef.current(all, goTo),
       landGeneratedPages: async (
         pageMarkers: string[],
@@ -978,6 +985,7 @@ export function AiPanel({
               appendedFrom,
               ...(insertedIndex !== undefined ? { insertedIndex } : {}),
             })
+            onWrittenPagesRef.current?.(qcPagesRef.current)
             return {
               ok: true,
               pages: res.slides.length,
@@ -1013,6 +1021,7 @@ export function AiPanel({
               pages: res.slides.length,
               insertedIndex: slideIndex,
             })
+            onWrittenPagesRef.current?.(qcPagesRef.current)
             return {
               ok: true,
               imageFailures:
@@ -2180,6 +2189,11 @@ export function AiPanel({
                     <Markdown text={entry.text} />
                   </div>
                 )}
+                {entry.role === 'assistant' && entry.text && !entry.error && (
+                  <div className="ai-message-usage">
+                    <AiGeneratedBadge lang={lang} />
+                  </div>
+                )}
               </div>
             ))}
             <div className="ai-history-sep">{t('aiHistorySep')}</div>
@@ -2255,9 +2269,10 @@ export function AiPanel({
                 <span dir="auto">{entry.text}</span>
               )}
               {entry.tools && entry.tools.length > 0 && <ToolChipList tools={entry.tools} />}
-              {entry.role === 'assistant' && entry.usage && (
+              {entry.role === 'assistant' && (entry.usage || (!!entry.text && !entry.error)) && (
                 <div className="ai-message-usage">
-                  <AiUsageChip usage={entry.usage} lang={lang} />
+                  {!entry.error && !!entry.text && <AiGeneratedBadge lang={lang} />}
+                  {entry.usage && <AiUsageChip usage={entry.usage} lang={lang} />}
                 </div>
               )}
               {entry.error && (

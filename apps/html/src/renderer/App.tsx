@@ -7,6 +7,7 @@ import {
   useAutoSavePref,
   type FindPanelStrings,
   type FindTarget,
+  AI_GENERATED_LABELS,
   rememberAiPanelOpen,
   useAiSidebarEnabled,
 } from '@genoffice/ui'
@@ -46,6 +47,8 @@ import {
 import { CropDialog, CutoutDialog, type ImageDialogLabels } from '@genoffice/ui'
 import { FloatToolbar } from './components/FloatToolbar'
 import { RedactDialog } from './components/RedactDialog'
+import { AiWriteChip } from './components/AiWriteChip'
+import { clearLastAiWrite, recordAiWrite } from './ai-write-anchor'
 import { redactClearPlan, redactMarkPlan, type RedactPlan } from './document/redact-edit'
 import {
   insertOp,
@@ -133,6 +136,14 @@ export default function App() {
   const [savedText, setSavedText] = useState('')
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [view, setView] = useState<ViewMode>(readViewMode)
+  /** bumped whenever the AI writes — re-measures the floating provenance chip */
+  const [aiWriteTick, setAiWriteTick] = useState(0)
+  // stable identities: the chip re-subscribes its window listeners when these change
+  const chipCoordsAt = useCallback(
+    (offset: number) => editorRef.current?.coordsAt(offset) ?? null,
+    [],
+  )
+  const chipTextLength = useCallback(() => textRef.current.length, [])
   const [canvasMode, setCanvasModeState] = useState<CanvasMode>('edit')
   /** Present → Fullscreen: the presenting view also takes the whole screen */
   const [presentFull, setPresentFull] = useState(false)
@@ -1471,12 +1482,27 @@ export default function App() {
       getSelectedSid: () => selectedSidRef.current,
       applyOps: (ops) => {
         flushPending()
-        return applyOps(ops, false)
+        const result = applyOps(ops, false)
+        if (result.ok) {
+          recordAiWrite(result.ranges)
+          setAiWriteTick((tick) => tick + 1)
+        }
+        return result
       },
-      replaceAll: (html) => replaceAll(html, true),
+      replaceAll: (html) => {
+        replaceAll(html, true)
+        // whole-page landing: the write spans the full document
+        recordAiWrite([[0, textRef.current.length]])
+        setAiWriteTick((tick) => tick + 1)
+      },
     },
     getSnapshot: () => ({ text: textRef.current }),
-    restoreSnapshot: (snapshot) => replaceAll(snapshot.text, false),
+    restoreSnapshot: (snapshot) => {
+      // the run's edits are reverted wholesale: the anchor points at nothing
+      clearLastAiWrite()
+      setAiWriteTick((tick) => tick + 1)
+      replaceAll(snapshot.text, false)
+    },
     onPrompt: (text) => {
       if (pathRef.current || provisionalNameRef.current) return
       const name = deriveNameFromPrompt(text)
@@ -1849,6 +1875,17 @@ export default function App() {
           onCancel={() => setPictureDialog(null)}
         />
       )}
+      <AiWriteChip
+        label={AI_GENERATED_LABELS[lang]}
+        tick={aiWriteTick}
+        sourceVisible={view !== 'preview'}
+        coordsAt={chipCoordsAt}
+        getTextLength={chipTextLength}
+        onClose={() => {
+          clearLastAiWrite()
+          setAiWriteTick((tick) => tick + 1)
+        }}
+      />
     </div>
   )
 }

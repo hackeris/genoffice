@@ -6,6 +6,8 @@ import { generateTocFieldXml, type TocEntry } from '@genoffice/docx-engine'
 import { isEastAsianFontName } from '../font-list'
 import { t } from '../i18n/locale'
 import { blockRangePositions, isTrackedDeleted, liveText } from './doc-utils'
+import { changedRangeOf } from '../editor/touched-blocks'
+import { recordAiWrite } from './last-write'
 import { styleOpDefs, type AiStyleAccess } from './style-ops'
 import { fieldOpDefs } from './field-ops'
 import { tableOpDefs } from './table-ops'
@@ -1644,6 +1646,11 @@ export function executeOps(editor: Editor, ops: unknown, ctx: OpContext = {}): E
       }
     } else {
       editor.view.dispatch(tr)
+    }
+    // anchor the floating provenance chip (UI-issued batches are not AI writes)
+    if (ctx.source !== 'ui') {
+      const written = changedRangeOf(tr)
+      if (written) recordAiWrite(written.from, written.to)
     }
   }
   return { ok: true, results, summary: summarize(results), plan }

@@ -10,6 +10,7 @@ import type { AgentToolCall, AgentToolDef } from '../../shared/ipc'
 import { OP_GROUPS, opGuide, opGuideCatalog, opSignatureIndex } from '@genoffice/pptx-ops/op-docs'
 import { auditSlideLayout, formatAudit } from '@genoffice/pipelines/slides/layout-audit'
 import { runLayoutScript, type LayoutScriptElement } from './layout-script'
+import { touchedPagesOf } from './slide-qc'
 import {
   extractLayoutSkeleton,
   formatSkeletonForPrompt,
@@ -90,6 +91,8 @@ export interface DeckAccess {
   applySlide(slideIndex: number, updated: RenderSlide): void
   /** Replace the whole deck (after adding/removing slides) and jump to the goTo slide */
   applyDeck(slides: RenderSlide[], goTo?: number): void
+  /** Pages a mutating tool just wrote (0-based); anchors the floating "AI-generated" chip. */
+  onPagesWritten?(pages: number[]): void
   /**
    * Generation progress callback (optional): called by generate_deck stages; the UI updates
    * the progress card and top progress bar in real time. Passed only through renderer
@@ -1460,6 +1463,7 @@ async function executeTool(
         )
       }
       access.applySlide(idx, applied.slide)
+      access.onPagesWritten?.([idx])
       const counts = { text: 0, style: 0, fill: 0, stroke: 0 }
       for (const e of r.edits) counts[e.kind] += 1
       const parts: string[] = []
@@ -1622,6 +1626,7 @@ async function executeTool(
           'Download or insertion failed (the image may be inaccessible)',
         )
       access.applySlide(idx, r.slide)
+      access.onPagesWritten?.([idx])
       return {
         output: `Inserted the image on page ${idx + 1}, element id=${r.sourceId}.`,
         mutated: true,
@@ -1671,6 +1676,7 @@ async function executeTool(
           'Replacement failed (the image may be inaccessible, or the element is not a replaceable picture)',
         )
       access.applySlide(idx, updated)
+      access.onPagesWritten?.([idx])
       return {
         output: `Replaced the image of picture ${sourceId} on page ${idx + 1} in place (frame/z-order/effects kept).`,
         mutated: true,
@@ -2536,6 +2542,7 @@ async function executeTool(
           `Operation failed (element ${sourceId} does not exist or is not a chart)`,
         )
       access.applySlide(idx, updated.slide)
+      access.onPagesWritten?.([idx])
       const sampleNote = op.series && call.input.dataSource === 'sample' ? SAMPLE_DATA_NOTE : ''
       return {
         output: `Updated chart ${sourceId} on page ${idx + 1}.${sampleNote}`,
@@ -2578,6 +2585,7 @@ async function executeTool(
       // Ops can delete slides — clamp the current index into the rebuilt deck
       // (page deletion may leave the current index past the end)
       access.applyDeck(r.slides!, Math.max(0, Math.min(access.getCurrent(), r.slides!.length - 1)))
+      access.onPagesWritten?.(touchedPagesOf(r.records, r.slides!.length))
       const created = (r.records ?? []).flatMap((rec) => rec.created ?? [])
       const doneStr = (r.records ?? [])
         .map((rec) => `${rec.op}${rec.target ? ` @${rec.target}` : ''}`)

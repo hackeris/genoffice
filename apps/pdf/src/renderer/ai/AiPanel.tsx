@@ -8,12 +8,14 @@ import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, ReactElement } from 'react'
 import { AgentLoop } from '@genoffice/agent-core'
 import { imageGenerationAvailable, type AiSettings } from '@genoffice/ai-provider/browser'
+import { pdfWritePageOf } from './write-page'
 import {
   AiComposer,
   AiQueueStrip,
   AI_QUEUE_LABELS,
   AiScopeQuote,
   AiTypingIndicator,
+  AiGeneratedBadge,
   AiUsageChip,
   addTokenUsage,
   useChatRunQueue,
@@ -104,6 +106,7 @@ export function AiPanel({
   onCollapse,
   preset,
   onRunDone,
+  onWrittenPage,
   onClearSelection,
 }: {
   api: PdfAppDeps
@@ -114,6 +117,8 @@ export function AiPanel({
   preset?: { text: string; nonce: number } | null
   /** Fired when a run that mutated the document finishes (drives the untitled-blank auto-save) */
   onRunDone?: () => void
+  /** The page a mutating tool just wrote (0-based); anchors the floating "AI-generated" chip */
+  onWrittenPage?: (page: number) => void
   /** The × on the scope chip: drop the cached selection so runs target the whole document */
   onClearSelection?: () => void
 }): ReactElement {
@@ -295,6 +300,8 @@ export function AiPanel({
   const apiRef = useRef(api)
   apiRef.current = api
   const onRunDoneRef = useRef(onRunDone)
+  const onWrittenPageRef = useRef(onWrittenPage)
+  onWrittenPageRef.current = onWrittenPage
   onRunDoneRef.current = onRunDone
   /** Any tool in the current run reported mutated: true */
   const runMutatedRef = useRef(false)
@@ -413,6 +420,10 @@ export function AiPanel({
         onToolExecuted: ({ call, execution }) => {
           setPhase('working')
           if (execution.mutated) runMutatedRef.current = true
+          if (execution.mutated && !execution.isError) {
+            const page = pdfWritePageOf(call)
+            if (page !== null) onWrittenPageRef.current?.(page)
+          }
           runToolsRef.current.push({
             name: call.name,
             summary: execution.summary,
@@ -756,9 +767,10 @@ export function AiPanel({
               className={`ai-msg ai-msg-assistant${entry.isError ? ' ai-msg-error' : ''}`}
             >
               {hasTools && <ToolChipList tools={entry.tools!} />}
-              {entry.usage && (
+              {(entry.usage || (!!entry.text && !entry.isError)) && (
                 <div className="ai-message-usage">
-                  <AiUsageChip usage={entry.usage} lang={lang} />
+                  {!entry.isError && !!entry.text && <AiGeneratedBadge lang={lang} />}
+                  {entry.usage && <AiUsageChip usage={entry.usage} lang={lang} />}
                 </div>
               )}
               {entry.text && (

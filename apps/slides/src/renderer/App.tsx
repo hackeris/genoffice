@@ -80,6 +80,7 @@ import {
   type AnchorRect,
   type AskTarget,
 } from './components/AiAskPopover'
+import { AiWrittenChip } from './components/AiWrittenChip'
 import {
   anchorId,
   buildSelectionInstruction,
@@ -98,6 +99,7 @@ import { RedactDialog } from './components/RedactDialog'
 import { ZoomDialog } from './components/ZoomDialog'
 import { CutoutDialog } from './components/CutoutDialog'
 import {
+  AI_GENERATED_LABELS,
   createWheelPager,
   createZoomWheelClassifier,
   useAutoSavePref,
@@ -399,6 +401,8 @@ export function App() {
   const [current, setCurrent] = useState(0)
   const [slideSelRaw, setSelectedSlides] = useState<number[]>([0])
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  /** Pages AI tools wrote this session (0-based); anchors the "AI-generated" chip, cleared by ✕/undo */
+  const [aiWrittenPages, setAiWrittenPages] = useState<number[]>([])
   /** Group being edited from inside (double-click to enter, click outside/Esc to exit); the selection may contain its children */
   const [enteredGroupId, setEnteredGroupId] = useState<string | null>(null)
   const [ungroupedSets, setUngroupedSets] = useState<UngroupedSet[]>([])
@@ -1081,6 +1085,9 @@ export function App() {
       return
     }
     const { current, slide } = ctxRef.current
+    // deck undo may revert AI writes: drop the provenance pages either way,
+    // a stale label on a reverted page is worse than no label
+    setAiWrittenPages([])
     applyHistoryResult(await window.slidesApi.undo(), current, slide?.partPath)
   }, [editing, applyHistoryResult])
 
@@ -1408,6 +1415,25 @@ export function App() {
     (): AnchorRect | null => (selectedIds.length > 0 ? selectionRect(selectedIds) : null),
     [selectedIds, selectionRect],
   )
+
+  /** Anchor for the "AI-generated" chip: the written page's visible box, only while the current page is one of them */
+  const getWrittenAnchorRect = useCallback((): AnchorRect | null => {
+    if (!aiWrittenPages.includes(current)) return null
+    const rel = stageRelRef.current
+    const slide = slides[current]
+    if (!rel || !slide) return null
+    const r = rel.getBoundingClientRect()
+    const view = rel.closest('.stage-wrap')?.getBoundingClientRect()
+    const rect = {
+      left: Math.max(r.left, view?.left ?? -Infinity),
+      top: Math.max(r.top, view?.top ?? -Infinity),
+      right: Math.min(r.right, view?.right ?? Infinity),
+      bottom: Math.min(r.bottom, view?.bottom ?? Infinity),
+      viewTop: view?.top ?? 0,
+      viewBottom: view?.bottom ?? window.innerHeight,
+    }
+    return rect.right <= rect.left || rect.bottom <= rect.top ? null : rect
+  }, [aiWrittenPages, current, slides])
 
   const openAskPopover = useCallback(() => {
     if (editing || editingCell || selectedIds.length === 0) return
@@ -3588,6 +3614,11 @@ export function App() {
                   setPath(p)
                   setDirty(false)
                 }}
+                onWrittenPages={(pages) =>
+                  setAiWrittenPages((prev) =>
+                    [...new Set([...prev, ...pages])].sort((a, b) => a - b),
+                  )
+                }
                 onBeforeRun={flushNotes}
                 currentFilePath={path}
                 editQueue={editQueue}
@@ -4611,6 +4642,11 @@ export function App() {
         selectedIds.length > 0 && (
           <AiAskTrigger getAnchorRect={getAskTriggerRect} onOpen={openAskPopover} />
         )}
+      <AiWrittenChip
+        label={AI_GENERATED_LABELS[lang]}
+        getAnchorRect={getWrittenAnchorRect}
+        onClose={() => setAiWrittenPages([])}
+      />
 
       {askState && askTargets.length > 0 && (
         <AiAskPopover

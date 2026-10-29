@@ -170,12 +170,14 @@ import {
 import type { CharStyle } from './color-runs'
 import { platformShortcuts } from '@genoffice/i18n'
 import {
+  AI_GENERATED_LABELS,
   Dropdown,
   rememberAiPanelOpen,
   useDismissablePopover,
   useRibbonCollapse,
   useAiSidebarEnabled,
 } from '@genoffice/ui'
+import { AiWrittenChip } from './components/AiWrittenChip'
 import { useI18n } from './i18n/locale'
 import { useAutosave } from './useAutosave'
 import type {
@@ -370,6 +372,8 @@ type RibbonTab = (typeof RIBBON_TABS)[number]['id'] | 'fillForm' | 'formDesign'
 
 export default function App() {
   const { lang, t } = useI18n()
+  /** The page AI tools last wrote (0-based original index); anchors the "AI-generated" chip until ✕/save */
+  const [aiWrittenPage, setAiWrittenPage] = useState<number | null>(null)
   const collapse = useRibbonCollapse('genoffice-pdf-ribbon-collapsed', {
     collapse: t('ribbonCollapse'),
     expand: t('ribbonExpand'),
@@ -4355,6 +4359,8 @@ export default function App() {
       if (result.skippedImageEdits && result.skippedImageEdits.length > 0) {
         noticeSkippedImages(result.skippedImageEdits)
       }
+      // the write is committed to the file: the provenance anchor has served
+      setAiWrittenPage(null)
       // Reload: changes are in the file now, canvas renders directly, saved pending ops are cleared
       try {
         const el = scrollRef.current
@@ -4504,6 +4510,8 @@ export default function App() {
     if (result.skippedImageEdits && result.skippedImageEdits.length > 0) {
       noticeSkippedImages(result.skippedImageEdits)
     }
+    // the write is committed to the file: the provenance anchor has served
+    setAiWrittenPage(null)
     if (applyingRedactions) {
       // The main process has committed this path and its read grant. Reload the
       // sanitized bytes, clearing undo/search state that could expose old content.
@@ -8223,6 +8231,7 @@ export default function App() {
             preset={aiPreset}
             onCollapse={() => setAiCollapsed(true)}
             onRunDone={() => void autoSaveAfterAiRun()}
+            onWrittenPage={setAiWrittenPage}
             onClearSelection={() => setAiSelection(null)}
           />
         </div>
@@ -10758,6 +10767,11 @@ export default function App() {
           </footer>
         </div>
       </div>
+      <AiWrittenChip
+        label={AI_GENERATED_LABELS[lang]}
+        page={aiWrittenPage}
+        onClose={() => setAiWrittenPage(null)}
+      />
     </div>
   )
 }

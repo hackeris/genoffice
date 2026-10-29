@@ -33,6 +33,8 @@ export interface SourceEditorHandle {
   clearHighlights(): void
   /** select and scroll a source range into view; focus only when the user asked for the editor */
   revealRange(from: number, to: number, focus?: boolean): void
+  /** viewport coordinates of a source offset; null until the editor is mounted */
+  coordsAt(offset: number): { left: number; right: number; top: number; bottom: number } | null
   /** the main selection in source offsets; null until the editor is mounted */
   getSelection(): (SourceRange & { empty: boolean }) | null
   undo(): boolean
@@ -234,6 +236,19 @@ export const SourceEditor = forwardRef<SourceEditorHandle, Props>(function Sourc
         annotations: [External.of(true)],
       })
       if (focus) view.focus()
+    },
+    coordsAt(offset) {
+      const view = viewRef.current
+      if (!view) return null
+      const pos = Math.max(0, Math.min(offset, view.state.doc.length))
+      try {
+        const rect = view.coordsAtPos(pos)
+        return rect
+          ? { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }
+          : null
+      } catch {
+        return null
+      }
     },
     getSelection() {
       const view = viewRef.current

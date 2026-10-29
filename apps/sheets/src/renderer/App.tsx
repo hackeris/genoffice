@@ -70,6 +70,7 @@ import { consumePendingUndoCarry, undoStackDepth } from './undo-carry'
 import { createSaveGate, shouldRunSaveTick } from './save-scheduler'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import {
+  AI_GENERATED_LABELS,
   useAutoSavePref,
   addTokenUsage,
   type AiTokenUsageView,
@@ -171,6 +172,9 @@ import {
   storeCrossHighlightPreference,
   type CrossHighlightHandle,
 } from './cross-highlight'
+import { AiWriteChip } from './components/AiWriteChip'
+import { clearLastAiWrite, planWriteRanges, recordAiWrite } from './ai-write-anchor'
+import { clearAiWriteOutline, currentOutlineTheme, setAiWriteOutline } from './ai-write-outline'
 import { installOutlineGutter, type OutlineGutterHandle } from './outline-gutter'
 import {
   loadRowOutlines,
@@ -560,6 +564,8 @@ export function App({
 }): React.JSX.Element {
   const adapterRef = useRef(new InMemoryWorkbookAdapter(initialSnapshot))
   const univerRef = useRef<UniverRuntime | null>(null)
+  /** bumped when the AI writes or its anchor clears — re-measures the floating chip */
+  const [aiWriteTick, setAiWriteTick] = useState(0)
   const lazyWorkbookRef = useRef<LazyWorkbookState | null>(null)
   /// Univer undo/redo stack occupancy (subscribed at mount): drives the QAT button gray states
   const [univerHist, setUniverHist] = useState({ canUndo: false, canRedo: false })
@@ -3742,6 +3748,10 @@ export function App({
       },
     )
     if (outcome.ok) {
+      // the AI plan landed: anchor the provenance outline + chip to its ranges
+      recordAiWrite(planWriteRanges(stored.plan))
+      if (runtime) setAiWriteOutline(runtime, currentOutlineTheme())
+      setAiWriteTick((tick) => tick + 1)
       lazyPreviewRef.current = null
       setPreview(null)
     } else if (outcome !== verified && outcome.reason) {
@@ -3754,6 +3764,7 @@ export function App({
   function runUiOps(
     ops: readonly WorkbookOperation[],
     successMessage?: string | null,
+    aiWrite = false,
   ): Promise<ApplyOutcome> {
     const runtime = univerRef.current
     const state = lazyWorkbookRef.current
@@ -3781,6 +3792,14 @@ export function App({
         runtime.univerAPI.getActiveWorkbook()?.getId() !== workbook.getId()
           ? { ok: false, reason: t('appApplyTxFailed') }
           : null,
+    }).then((outcome) => {
+      // MCP batches are AI writes too: anchor the provenance outline + chip
+      if (outcome.ok && aiWrite) {
+        recordAiWrite(planWriteRanges(plan))
+        setAiWriteOutline(runtime, currentOutlineTheme())
+        setAiWriteTick((tick) => tick + 1)
+      }
+      return outcome
     })
   }
 
@@ -4744,7 +4763,7 @@ export function App({
           return { ok: false, reason: error instanceof Error ? error.message : String(error) }
         }
       }
-      const outcome = await runUiOps(ops)
+      const outcome = await runUiOps(ops, undefined, true)
       if (!outcome.ok) return outcome
       // A formula's text lands synchronously but its result is computed
       // asynchronously, so an immediate read of the cells this batch targeted
@@ -5279,6 +5298,15 @@ export function App({
           onClose={() => setWatchOpen(false)}
         />
       )}
+      <AiWriteChip
+        runtime={univerRef.current}
+        label={AI_GENERATED_LABELS[getLang()]}
+        tick={aiWriteTick}
+        onClose={() => {
+          clearLastAiWrite()
+          if (univerRef.current) clearAiWriteOutline(univerRef.current)
+        }}
+      />
     </>
   )
 

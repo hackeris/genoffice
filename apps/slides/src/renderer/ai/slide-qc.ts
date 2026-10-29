@@ -115,6 +115,25 @@ export function mergeQcPages(
   }
 }
 
+/**
+ * 0-based pages an applyTxn touched, parsed from the journal records' numeric
+ * slide prefixes (`"3/text:…"` → page 3). Deduped and sorted; targets outside
+ * the deck are skipped, so the caller passes the rebuilt deck's size.
+ */
+export function touchedPagesOf(
+  records: Array<{ target?: string }> | undefined,
+  deckSize = Number.POSITIVE_INFINITY,
+): number[] {
+  const pages = new Set<number>()
+  for (const rec of records ?? []) {
+    const prefix = rec.target?.split('/')[0] ?? ''
+    if (!/^\d+$/.test(prefix)) continue
+    const idx = Number(prefix)
+    if (idx >= 0 && idx < deckSize) pages.add(idx)
+  }
+  return [...pages].sort((a, b) => a - b)
+}
+
 /** Only the two tools the QC pass needs: fresh geometry reads + atomic layout scripts */
 const QC_TOOL_ALLOWLIST = new Set(['read_slide', 'execute_slide_script'])
 

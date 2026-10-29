@@ -6,6 +6,7 @@ import {
 } from './markdown/roundtripSerializer'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  AI_GENERATED_LABELS,
   ImageViewer,
   rememberAiPanelOpen,
   useAutoSavePref,
@@ -54,6 +55,7 @@ import { showToast } from './components/toast-bus'
 import { TableMenu } from './components/TableMenu'
 import { FrontmatterPanel } from './components/FrontmatterPanel'
 import { AiAskPopover } from './components/AiAskPopover'
+import { AiWriteChip } from './components/AiWriteChip'
 import { AiPanel, AiMark, type AiPreset, type MarkdownAiDeps } from './ai/AiPanel'
 import { EDIT_QUEUE_MAX, selectionForAnchor, type EditQueueItem } from './ai/edit-queue'
 import { addQueueAnchor, clearQueueAnchors, removeQueueAnchors } from './editor/aiQueueAnchors'
@@ -1341,6 +1343,9 @@ export default function App() {
           onQueueUpdate={queueUpdate}
           onQueueRemove={queueRemove}
         />
+      )}
+      {editor && !sourceMode && status === 'ready' && (
+        <AiWriteChip editor={editor} label={AI_GENERATED_LABELS[lang]} />
       )}
     </div>
   )

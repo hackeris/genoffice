@@ -10,6 +10,7 @@ import { AgentLoop, composeSkills, streamText, type MindMapTreeNode } from '@gen
 import { imageGenerationAvailable, type AiSettings } from '@genoffice/ai-provider/browser'
 import {
   AiComposer,
+  AiGeneratedBadge,
   AiQueueStrip,
   AI_QUEUE_LABELS,
   AiScopeQuote,
@@ -943,9 +944,10 @@ export function AiPanel({
                   }}
                 />
               )}
-              {entry.usage && (
+              {(entry.usage || (!!entry.text && !entry.isError)) && (
                 <div className="ai-message-usage">
-                  <AiUsageChip usage={entry.usage} lang={lang} />
+                  {!entry.isError && !!entry.text && <AiGeneratedBadge lang={lang} />}
+                  {entry.usage && <AiUsageChip usage={entry.usage} lang={lang} />}
                 </div>
               )}
               {showToolbar && (

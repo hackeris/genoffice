@@ -1,0 +1,57 @@
+/* AI-generated provenance labels: the in-reply badge and the floating chip
+   beside AI-written document ranges. Neutral by design — a marking, not an
+   action button and not an error; the chip's ✕ is its only control. */
+
+.ai-generated-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-6, 6px);
+  background: var(--surface-subtle);
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 16px;
+  user-select: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ai-generated-chip {
+  position: fixed;
+  /* same floating tier as the docs paste chip */
+  z-index: 59;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-6, 6px);
+  background: var(--surface);
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 16px;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.ai-generated-chip-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-6, 6px);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ai-generated-chip-close:hover {
+  background: var(--hover);
+  color: var(--text-secondary);
+}

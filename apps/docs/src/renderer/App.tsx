@@ -17,6 +17,7 @@ import { handleDocsControl, type ControlRequest } from './control'
 import { DOMParser as PmDOMParser, type Mark as PmMark, Slice as PmSlice } from '@tiptap/pm/model'
 import { NodeSelection, TextSelection, type Command, type Transaction } from '@tiptap/pm/state'
 import {
+  AI_GENERATED_LABELS,
   Dropdown,
   ImageViewer,
   rememberAiPanelOpen,
@@ -53,6 +54,7 @@ import {
   takeTextReroute,
 } from './editor/paste-options'
 import { PasteOptionsChip } from './components/PasteOptionsChip'
+import { AiWriteChip } from './components/AiWriteChip'
 import {
   BLANK_BULLET_NUM_ID,
   BLANK_ORDERED_NUM_ID,
@@ -7448,6 +7450,7 @@ export function App() {
               />
             )}
             {doc && <PasteOptionsChip editor={editor} />}
+            {doc && <AiWriteChip editor={editor} label={AI_GENERATED_LABELS[lang]} />}
             <div className="editor-area">
               <main
                 className={`editor-scroll${imageDragOver ? ' image-drop-target' : ''}${doc ? '' : ' start-screen-host'}`}

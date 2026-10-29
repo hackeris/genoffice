@@ -5,6 +5,9 @@ export { useChatRunQueue, type ChatRunQueue, type QueuedChatMessage } from './ch
 export { AI_QUEUE_LABELS, type AiQueueStripLabels } from './strings-ai-queue'
 export { AiUsageChip, addTokenUsage, formatTokenCount, type AiTokenUsageView } from './AiUsageChip'
 export { AI_USAGE_LABELS, type AiUsageLabels } from './strings-ai-usage'
+export { AiGeneratedBadge } from './AiGeneratedBadge'
+export { AiGeneratedChip } from './AiGeneratedChip'
+export { AI_GENERATED_LABELS } from './strings-ai-generated'
 export { AiScopeQuote, type AiScopeQuoteData } from './AiScopeQuote'
 export {
   AI_CUSTOM_FONT_MAX_PX,

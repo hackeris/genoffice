@@ -10,6 +10,7 @@ import {
   AiQueueStrip,
   AI_QUEUE_LABELS,
   AiScopeQuote,
+  AiGeneratedBadge,
   AiTypingIndicator,
   AiUsageChip,
   type AiScopeQuoteData,
@@ -618,6 +619,11 @@ export function AiChatPanel({
                     <Markdown text={entry.text} navs={[citationNav, fileNav]} />
                   </div>
                 )}
+                {entry.role === 'assistant' && entry.text && !entry.isError && (
+                  <div className="ai-message-usage">
+                    <AiGeneratedBadge lang={lang} />
+                  </div>
+                )}
               </div>
             ))}
             <div className="ai-history-sep">{t('aiHistorySep')}</div>
@@ -662,9 +668,10 @@ export function AiChatPanel({
             ) : (
               <>
                 {entry.tools.length > 0 && <ToolChipList tools={entry.tools} />}
-                {entry.usage && (
+                {(entry.usage || (!!entry.text && !entry.isError)) && (
                   <div className="ai-message-usage">
-                    <AiUsageChip usage={entry.usage} lang={lang} />
+                    {!entry.isError && !!entry.text && <AiGeneratedBadge lang={lang} />}
+                    {entry.usage && <AiUsageChip usage={entry.usage} lang={lang} />}
                   </div>
                 )}
                 {entry.text ? (
