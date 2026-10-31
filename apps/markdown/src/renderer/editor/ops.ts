@@ -72,6 +72,8 @@ export interface FrontmatterAccess {
 
 export interface OpsContext {
   source: 'ai' | 'ui'
+  /** 内容来源:imported = AI 插入的外来内容(如网图),不作为浮标锚点 */
+  provenance?: 'generated' | 'imported'
   frontmatter?: FrontmatterAccess
 }
 
@@ -91,6 +93,8 @@ export interface OpMeta {
   batch: number
   /** undoes a failed op's partial changes; not an edit of its own */
   rollback?: boolean
+  /** 内容来源透传(aiHighlight 的浮标锚点据此跳过外来内容) */
+  provenance?: OpsContext['provenance']
 }
 
 export interface RunOpsResult {
@@ -1014,7 +1018,12 @@ export function runOps(editor: Editor, ops: MdOp[], ctx: OpsContext): RunOpsResu
     ctx,
     origDoc: editor.state.doc,
     mappings: [],
-    meta: { op: ops[0]!.op, source: ctx.source, batch },
+    meta: {
+      op: ops[0]!.op,
+      source: ctx.source,
+      batch,
+      ...(ctx.provenance ? { provenance: ctx.provenance } : {}),
+    },
   }
   const onTransaction = ({ transaction }: { transaction: Transaction }) => {
     if (transaction.docChanged) exec.mappings.push(transaction.mapping)
@@ -1023,7 +1032,12 @@ export function runOps(editor: Editor, ops: MdOp[], ctx: OpsContext): RunOpsResu
   const results: OpResult[] = []
   try {
     for (const op of ops) {
-      exec.meta = { op: op.op, source: ctx.source, batch }
+      exec.meta = {
+        op: op.op,
+        source: ctx.source,
+        batch,
+        ...(ctx.provenance ? { provenance: ctx.provenance } : {}),
+      }
       let result: OpResult
       try {
         result = execOp(exec, op)

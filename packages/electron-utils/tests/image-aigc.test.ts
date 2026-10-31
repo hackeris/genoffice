@@ -181,9 +181,29 @@ describe('stampAiGeneratedImage', () => {
     expect(new TextDecoder().decode(stampedPng).includes('iTXt')).toBe(true)
   })
 
+  it('stamps WebP (RIFF) with an XMP chunk and rewrites the RIFF size', () => {
+    const body = [0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x20, 0x02, 0x00, 0x00, 0x00, 0x01, 0x02]
+    const webp = new Uint8Array([
+      0x52, 0x49, 0x46, 0x46, body.length + 4, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, ...body,
+    ])
+    const stamped = stampAiGeneratedImage(webp, { provider: 'glm' })
+    expect(stamped.length).toBeGreaterThan(webp.length)
+    // 尾部 'XMP ' chunk:FourCC + sizeLE + payload
+    const tail = stamped.subarray(webp.length)
+    expect(String.fromCharCode(tail[0]!, tail[1]!, tail[2]!, tail[3]!)).toBe('XMP ')
+    const chunkSize = tail[4]! | (tail[5]! << 8) | (tail[6]! << 16) | (tail[7]! << 24)
+    expect(tail.length).toBe(8 + chunkSize)
+    const payload = new TextDecoder().decode(tail.subarray(8))
+    expect(payload).toContain('"Label":"AI生成"')
+    expect(payload).toContain('tc260:AIGC')
+    // RIFF size 重写为覆盖新 chunk
+    const riffSize = stamped[4]! | (stamped[5]! << 8) | (stamped[6]! << 16) | (stamped[7]! << 24)
+    expect(riffSize).toBe(stamped.length - 8)
+  })
+
   it('passes unknown formats through unchanged', () => {
-    const webp = new Uint8Array([0x52, 0x49, 0x46, 0x46, 1, 2, 3, 4, 5, 6, 7, 8])
-    expect(stampAiGeneratedImage(webp, { provider: 'glm' })).toBe(webp)
+    const riff = new Uint8Array([0x52, 0x49, 0x46, 0x46, 1, 2, 3, 4, 5, 6, 7, 8]) // RIFF 但非 WEBP
+    expect(stampAiGeneratedImage(riff, { provider: 'glm' })).toBe(riff)
   })
 })
 

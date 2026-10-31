@@ -1,6 +1,9 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+// Own subpath rather than the package barrel: the barrel drags Electron-only
+// modules into headless bundles.
+import { stampAiGeneratedPdfJson } from '@genoffice/electron-utils/pdf-aigc'
 import type { ExportPdfLink, ExportPdfPage } from '../shared/ipc'
 
 export interface PdfExportWindow {
@@ -21,6 +24,8 @@ export interface ExportSlidesPdfOptions {
   links?: ExportPdfLink[][]
   /** @font-face rules for the SVG pages' text (data: URLs) */
   fontCss?: string
+  /** TC260 AIGC JSON(latch 持有);非空时给导出的 PDF 盖隐式标识 */
+  aiProvenanceJson?: string
   createWindow(): PdfExportWindow
   openExportedPdf(path: string): void
   /** Watchdog for a hung renderer (default 300s, matching the headless export) */
@@ -142,6 +147,7 @@ export async function exportSlidesPdf({
   filePath,
   links,
   fontCss,
+  aiProvenanceJson,
   createWindow,
   openExportedPdf,
   timeoutMs = PDF_EXPORT_TIMEOUT_MS,
@@ -167,7 +173,10 @@ export async function exportSlidesPdf({
           margins: { top: 0, bottom: 0, left: 0, right: 0 },
           preferCSSPageSize: false,
         })
-        await writeFile(filePath, pdf)
+        const finalPdf = aiProvenanceJson
+          ? await stampAiGeneratedPdfJson(new Uint8Array(pdf), aiProvenanceJson)
+          : new Uint8Array(pdf)
+        await writeFile(filePath, Buffer.from(finalPdf))
         openExportedPdf(filePath)
         return { ok: true, path: filePath }
       })(),

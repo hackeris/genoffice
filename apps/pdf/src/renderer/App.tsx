@@ -7,6 +7,8 @@ import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist/legacy/build/pdf.mj
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'
 import { AiPanel, AiMark } from './ai/AiPanel'
+import { clearAigcMeta, currentAigcMeta } from './ai/aigc-latch'
+import { aigcMetaJson } from '@genoffice/electron-utils/aigc-meta'
 import { AiAskPopover, type AskAnchorRect } from './AiAskPopover'
 import {
   createSavedAnnotCountsLoader,
@@ -1490,6 +1492,7 @@ export default function App() {
   const openPath = useCallback(
     async (path: string) => {
       try {
+        clearAigcMeta()
         setFilePath(path)
         // A newly opened file starts outside the autosave gate
         savedOnceRef.current = false
@@ -4236,6 +4239,10 @@ export default function App() {
     noteFlush?: { drawings: LocalDrawing[]; noteEdits: LocalNoteEdit[] },
     fields: LocalFormField[] = savableFormFields,
   ) => ({
+    // provenance latch (renderer): the saved file gets the TC260 marking when set
+    ...(currentAigcMeta()
+      ? { aiProvenance: aigcMetaJson(currentAigcMeta()!) }
+      : {}),
     markups: markups.map(({ id: _id, ...rest }) => rest),
     annotDeletes: annotDeletes.map((d): AnnotDeleteInput => ({
       pageIndex: d.annot.pageIndex,

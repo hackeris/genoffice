@@ -80,6 +80,9 @@ export interface Session {
   opSeq?: number
   /** Applied-op journal, capped ring — the attachment point for a future sync transport */
   opLog?: OpLogEntry[]
+  /** TC260 AIGC JSON of this deck's provenance latch (set once per deck when an
+      AI write lands; carries into pptx saves and PDF exports) */
+  aiProvenance?: string
 }
 export const sessions = new Map<number, Session>()
 

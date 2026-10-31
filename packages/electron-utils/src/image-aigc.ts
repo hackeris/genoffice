@@ -7,6 +7,7 @@
  * saved files. Unrecognized formats pass through unchanged.
  */
 import { randomUUID } from 'node:crypto'
+import { aigcJsonFields, aigcXmpPacketFromJson } from './aigc-meta'
 
 export interface AiImageMeta {
   /** media provider id that produced the image ('glm', 'doubao', …) */
@@ -72,18 +73,9 @@ function iTXtChunk(keyword: string, text: string): Uint8Array {
  * propagator fields stay empty at generation time.
  */
 function aigcPayload(meta: AiImageMeta): string {
-  // provider ids are a fixed enum; the whitelist keeps the value safe inside
-  // XML attribute positions (the JSON lands in one, for JPEG)
-  const producer = (meta.provider ?? '').replace(/[^A-Za-z0-9_-]/g, '')
-  return JSON.stringify({
-    Label: 'AI生成',
-    ContentProducer: producer,
-    ProduceID: randomUUID(),
-    ReservedCode1: '',
-    ContentPropagator: '',
-    PropagateID: '',
-    ReservedCode2: '',
-  })
+  // per-generation ProduceID: image stamps are one-shot, unlike the document
+  // latch which reuses one id across saves (see aigc-meta.ts)
+  return JSON.stringify(aigcJsonFields(meta.provider ?? '', randomUUID()))
 }
 
 /** Stamp `bytes` with the AIGC provenance chunk; non-PNG input returns as-is. */
@@ -129,15 +121,11 @@ export function stampAiGeneratedPng(bytes: Uint8Array, meta: AiImageMeta = {}): 
  * CRC — just a big-endian length — so insertion is a splice.
  */
 const XMP_NAMESPACE = 'http://ns.adobe.com/xap/1.0/\0'
-const TC260_AIGC_NS = 'http://www.tc260.org.cn/ns/AIGC/1.0/'
 
 function xmpPacket(meta: AiImageMeta): string {
-  const aigc = aigcPayload(meta)
-  return (
-    `<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>` +
-    `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">` +
-    `<rdf:Description rdf:about="" xmlns:tc260="${TC260_AIGC_NS}" tc260:AIGC='${aigc}'/>` +
-    `</rdf:RDF></x:xmpmeta><?xpacket end=" w"?>`
+  // per-generation ProduceID,同图片章字段集
+  return aigcXmpPacketFromJson(
+    JSON.stringify(aigcJsonFields(meta.provider ?? '', randomUUID())),
   )
 }
 
@@ -160,13 +148,50 @@ export function stampAiGeneratedJpeg(bytes: Uint8Array, meta: AiImageMeta = {}):
 }
 
 /**
+ * WebP(RIFF 容器):XMP chunk('XMP ' FourCC)追加到尾部并重写 RIFF size。
+ * 严格说规范要求元数据走扩展格式(VP8X),主流读取器对简单格式尾部
+ * XMP 也能识别;生成链路当前不产 WebP,此实现属前瞻兜底。
+ */
+export function stampAiGeneratedWebp(bytes: Uint8Array, meta: AiImageMeta = {}): Uint8Array {
+  const riff = (i: number) => String.fromCharCode(bytes[i]!, bytes[i + 1]!, bytes[i + 2]!, bytes[i + 3]!)
+  if (bytes.length < 12 || riff(0) !== 'RIFF' || riff(8) !== 'WEBP') return bytes
+  const data = new TextEncoder().encode(xmpPacket(meta))
+  const chunk = new Uint8Array(8 + data.length) // FourCC(4) + sizeLE(4) + data(无 CRC、不补位)
+  chunk[0] = 0x58 // 'X'
+  chunk[1] = 0x4d // 'M'
+  chunk[2] = 0x50 // 'P'
+  chunk[3] = 0x20 // ' '
+  chunk[4] = data.length & 0xff
+  chunk[5] = (data.length >>> 8) & 0xff
+  chunk[6] = (data.length >>> 16) & 0xff
+  chunk[7] = (data.length >>> 24) & 0xff
+  chunk.set(data, 8)
+  const out = new Uint8Array(bytes.length + chunk.length)
+  out.set(bytes, 0)
+  out.set(chunk, bytes.length)
+  const riffSize = out.length - 8
+  out[4] = riffSize & 0xff
+  out[5] = (riffSize >>> 8) & 0xff
+  out[6] = (riffSize >>> 16) & 0xff
+  out[7] = (riffSize >>> 24) & 0xff
+  return out
+}
+
+/**
  * Stamp AI-generated provenance onto an image, dispatching on the magic
- * bytes: PNG gets an iTXt chunk, JPEG gets an XMP APP1 segment; anything
- * else passes through unchanged.
+ * bytes: PNG gets an iTXt chunk, JPEG an XMP APP1 segment, WebP an XMP RIFF
+ * chunk; anything else passes through unchanged.
  */
 export function stampAiGeneratedImage(bytes: Uint8Array, meta: AiImageMeta = {}): Uint8Array {
   if (bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8) {
     return stampAiGeneratedJpeg(bytes, meta)
+  }
+  if (
+    bytes.length >= 12 &&
+    String.fromCharCode(bytes[0]!, bytes[1]!, bytes[2]!, bytes[3]!) === 'RIFF' &&
+    String.fromCharCode(bytes[8]!, bytes[9]!, bytes[10]!, bytes[11]!) === 'WEBP'
+  ) {
+    return stampAiGeneratedWebp(bytes, meta)
   }
   return stampAiGeneratedPng(bytes, meta)
 }

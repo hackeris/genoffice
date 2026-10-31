@@ -104,3 +104,43 @@ export function patchZoteroDocumentDataXml(xml: string | null, data: string): st
     (close) => `${properties}${close}`,
   )
 }
+
+const AIGC_PROPERTY_NAME = 'AIGC'
+
+/**
+ * Upsert the AIGC provenance property (AI 生成内容隐式标识,TC260 七字段
+ * JSON) into docProps/custom.xml, preserving every other property (Zotero
+ * chunks, user-defined values) and their pids. `xml === null` means the part
+ * does not exist yet and is created.
+ */
+export function patchAigcCustomPropertiesXml(xml: string | null, aigcJson: string): string {
+  const original =
+    xml ??
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+      '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" ' +
+      'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"></Properties>'
+  let maxPid = 1
+  for (const property of original.match(PROPERTY_RE) ?? []) {
+    const pid = Number(attrValue(property, 'pid'))
+    if (Number.isSafeInteger(pid)) maxPid = Math.max(maxPid, pid)
+  }
+  const withoutOld = original.replace(PROPERTY_RE, (property) => {
+    const name = attrValue(property, 'name')
+    return name === AIGC_PROPERTY_NAME ? '' : property
+  })
+  const property =
+    `<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="${++maxPid}"` +
+    ` name="${AIGC_PROPERTY_NAME}"><vt:lpwstr>${escapeXmlText(aigcJson)}</vt:lpwstr></property>`
+  const selfClosing = /<((?:[A-Za-z_][\w.-]*:)?Properties)\b([^>]*?)\/>/
+  const empty = selfClosing.exec(withoutOld)
+  if (empty) {
+    return withoutOld.replace(
+      selfClosing,
+      () => `<${empty[1]}${empty[2]}>${property}</${empty[1]}>`,
+    )
+  }
+  return withoutOld.replace(
+    /<\/(?:[A-Za-z_][\w.-]*:)?Properties\s*>/,
+    (close) => `${property}${close}`,
+  )
+}

@@ -337,6 +337,7 @@ const api: SlidesApi = {
   beginHistoryBatch: () => ipcRenderer.invoke('slides:history-batch-begin'),
   endHistoryBatch: () => ipcRenderer.invoke('slides:history-batch-end'),
   applyEditScript: (op: ApplyEditScriptOp) => ipcRenderer.invoke('slides:apply-edit-script', op),
+  aiLatch: (provider: string) => ipcRenderer.invoke('slides:ai-latch', provider),
   applyTxn: (op: ApplyTxnOp) => ipcRenderer.invoke('slides:apply-txn', op),
   aiSnapshotRestore: (id: number) => ipcRenderer.invoke('slides:ai-snapshot-restore', id),
   undo: () => ipcRenderer.invoke('slides:undo'),

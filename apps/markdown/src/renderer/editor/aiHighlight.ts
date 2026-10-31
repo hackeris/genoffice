@@ -109,11 +109,14 @@ export const AiHighlight = Extension.create({
             const meta = tr.getMeta(OP_META) as OpMeta | undefined
             const add =
               meta?.source === 'ai' && !meta.rollback && tr.docChanged ? changedRanges(tr) : []
+            // 外来内容(网图)由 AI 插入时高亮照旧,但不作为浮标锚点
+            const anchorsChip = meta?.provenance !== 'imported'
             for (const range of add) {
               const from = Math.max(0, Math.min(range.from, tr.doc.content.size))
               const to = Math.max(from, Math.min(range.to, tr.doc.content.size))
               if (to <= from) continue
               next = next.add(tr.doc, [Decoration.inline(from, to, { class: 'ai-changed' })])
+              if (!anchorsChip) continue
               // one run landing adjacent chunks reads as one recent write; a
               // separated write re-anchors the chip to the latest range
               const written = { from, to }

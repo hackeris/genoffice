@@ -60,6 +60,7 @@ import {
 import { setInactiveSelectionShown } from '../editor/inactive-selection'
 import { applyRevisionsBy } from '../editor/revisions'
 import { clearLastAiWrite } from './last-write'
+import { latchAigc } from './aigc-latch'
 import { DOCS_CONTINUE_INSTRUCTION } from './continuation'
 import { waitForFullContent } from '../phased-content'
 import { currentDocGeneration } from '../file-actions'
@@ -856,6 +857,8 @@ export function AiPanel({
             // tracking off: accept immediately (same tick, so the yellow never paints);
             // tracking on: revisions stay pending, handled in the Review tab
             if (!trackChangesRef.current) clearAiHighlights(true)
+            // AI 内容落进本文档:置位隐式标识闩锁(保存时写 docProps/custom.xml)
+            latchAigc(settingsRef.current?.provider ?? '')
           }
           // mind maps ride the UI-only display side channel onto the message
           const display = execution.display

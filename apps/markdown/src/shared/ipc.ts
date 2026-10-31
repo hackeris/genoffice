@@ -206,6 +206,8 @@ export interface ExportPdfRequest {
   suggestedName: string
   /** headless export mode only: write here instead of opening the save dialog */
   outPath?: string
+  /** the renderer's provenance latch: the exported PDF gets the TC260 implicit marking when set */
+  aigc?: { provider: string; produceId: string }
 }
 
 export type ImageExportPreparation =

@@ -170,6 +170,8 @@ export interface ExportPdfRequest {
   suggestedName: string
   /** headless export mode only: write here instead of opening the save dialog */
   outPath?: string
+  /** the renderer's provenance latch: the exported PDF gets the TC260 implicit marking when set */
+  aigc?: { provider: string; produceId: string }
 }
 
 /** Single-file HTML export: local image references inlined as data URLs; opens without the assets/ folder */

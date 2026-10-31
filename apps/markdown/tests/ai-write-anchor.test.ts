@@ -72,4 +72,13 @@ describe('lastAiWriteRange', () => {
     uiOp(editor, { op: 'insertContent', after: 'end', markdown: 'typed' })
     expect(lastAiWriteRange(editor.state)).toBeNull()
   })
+
+  it('an imported write (AI-inserted web image) highlights but never anchors the chip', () => {
+    const editor = createEditor('# T\n')
+    runOps(editor, [{ op: 'insertContent', after: 'end', markdown: 'web content' }], {
+      source: 'ai',
+      provenance: 'imported',
+    })
+    expect(lastAiWriteRange(editor.state)).toBeNull()
+  })
 })

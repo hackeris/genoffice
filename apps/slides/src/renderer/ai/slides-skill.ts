@@ -1626,7 +1626,8 @@ async function executeTool(
           'Download or insertion failed (the image may be inaccessible)',
         )
       access.applySlide(idx, r.slide)
-      access.onPagesWritten?.([idx])
+      // 仅生成图(file:// 本地库)锚页标;网图/用户附件是外来内容,AI 只是执行插入
+      if (/^file:\/\//.test(url)) access.onPagesWritten?.([idx])
       return {
         output: `Inserted the image on page ${idx + 1}, element id=${r.sourceId}.`,
         mutated: true,
@@ -1676,7 +1677,8 @@ async function executeTool(
           'Replacement failed (the image may be inaccessible, or the element is not a replaceable picture)',
         )
       access.applySlide(idx, updated)
-      access.onPagesWritten?.([idx])
+      // 同 insert_web_image:仅生成图(file://)锚页标
+      if (/^file:\/\//.test(url)) access.onPagesWritten?.([idx])
       return {
         output: `Replaced the image of picture ${sourceId} on page ${idx + 1} in place (frame/z-order/effects kept).`,
         mutated: true,

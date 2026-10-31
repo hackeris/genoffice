@@ -49,6 +49,7 @@ import { FloatToolbar } from './components/FloatToolbar'
 import { RedactDialog } from './components/RedactDialog'
 import { AiWriteChip } from './components/AiWriteChip'
 import { clearLastAiWrite, recordAiWrite } from './ai-write-anchor'
+import { clearAigcMeta, currentAigcMeta } from './ai/aigc-latch'
 import { redactClearPlan, redactMarkPlan, type RedactPlan } from './document/redact-edit'
 import {
   insertOp,
@@ -295,6 +296,7 @@ export default function App() {
         pushedVersionRef.current = map0.version
         frameVersionsRef.current = new Set([map0.version])
         frameScrollRef.current = null
+        clearAigcMeta()
         setPath(pending)
         setText(doc.text)
         setSavedText(doc.text)
@@ -1272,7 +1274,13 @@ export default function App() {
         pathRef.current?.replace(/^.*[/\\]/, '').replace(/\.html?$/i, '') ||
         deriveAutoFileName(html) ||
         ''
-      const request = { html, suggestedName, ...(outPath ? { outPath } : {}) }
+      const request = {
+        html,
+        suggestedName,
+        ...(outPath ? { outPath } : {}),
+        // the exported PDF carries the TC260 marking when the doc was AI-edited
+        ...(format === 'pdf' && currentAigcMeta() ? { aigc: currentAigcMeta()! } : {}),
+      }
       const result =
         format === 'pdf'
           ? await window.htmlApi.exportPdf(request)

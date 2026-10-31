@@ -1,0 +1,25 @@
+/**
+ * AI 生成内容隐式标识的文档级闩锁:AI 运行有改动落进本文档即置位。.md 纯
+ * 文本没有元数据容器,保存不携带;导出 PDF 时给产物盖 TC260 标识(catalog
+ * Metadata + Info /AIGC)。不做自动去戳(撤销全部 AI 内容的判定不可靠,漏判
+ * 即违规,宁可过宽);换文档/新建空白时清除。
+ */
+import type { AigcMeta } from '@genoffice/electron-utils/aigc-meta'
+import { newAigcMeta } from '@genoffice/electron-utils/aigc-meta'
+
+let latched: AigcMeta | null = null
+
+/** AI 改动落进本文档:置位(已置位则保持原 ProduceID,同文档同编号) */
+export function latchAigc(provider: string): void {
+  latched ??= newAigcMeta(provider)
+}
+
+/** 当前文档的标识元数据;未置位返回 null(导出不盖章) */
+export function currentAigcMeta(): AigcMeta | null {
+  return latched
+}
+
+/** 换文档/新建空白:上一份文档的标识随之终结 */
+export function clearAigcMeta(): void {
+  latched = null
+}

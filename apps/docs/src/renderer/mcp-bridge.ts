@@ -3,6 +3,7 @@ import { BLANK_BULLET_NUM_ID, BLANK_ORDERED_NUM_ID } from '@genoffice/docx-engin
 import type { McpCommandMessage, McpEditorCommand } from '../shared/ipc'
 import { executeTool, markDocSeen } from './ai/tools'
 import { findNumId, type NumIds } from './ai/protocol'
+import { latchAigc } from './ai/aigc-latch'
 import { save, type FileActionContext } from './file-actions'
 
 /**
@@ -110,6 +111,7 @@ async function runCommand(
       )
       if (outcome.isError) throw new Error(mcpErrorText(outcome.output))
       clearAiChangedFlags(editor)
+      if (outcome.mutated) latchAigc('mcp')
       return { summary: outcome.summary, mutated: outcome.mutated }
     }
 
@@ -123,6 +125,7 @@ async function runCommand(
       )
       if (outcome.isError) throw new Error(mcpErrorText(outcome.output))
       clearAiChangedFlags(editor)
+      if (outcome.mutated) latchAigc('mcp')
       return { summary: outcome.summary, mutated: outcome.mutated }
     }
 
@@ -142,7 +145,10 @@ async function runCommand(
         numIdsFor(ctx),
       )
       if (outcome.isError) throw new Error(mcpErrorText(outcome.output))
-      if (input.dryRun !== true) clearAiChangedFlags(editor)
+      if (input.dryRun !== true) {
+        clearAiChangedFlags(editor)
+        if (outcome.mutated) latchAigc('mcp')
+      }
       return { summary: outcome.summary, output: outcome.output, mutated: outcome.mutated }
     }
 

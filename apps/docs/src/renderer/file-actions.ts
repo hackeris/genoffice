@@ -83,6 +83,8 @@ import {
 import { t, getLang } from './i18n/locale'
 import { isBlankDocument, parseHtmlFragment, replaceBlockRange } from './ai/protocol'
 import { carryDocSeen } from './ai/tools'
+import { clearAigcMeta, currentAigcMeta } from './ai/aigc-latch'
+import { aigcMetaJson } from '@genoffice/electron-utils/aigc-meta'
 import { isDocDirty, resetCrossDocEditState } from './doc-dirty'
 import { pruneUnreferencedNumbering } from './numbering-actions'
 import { applySectPrRewrites, type SectPrRewrite } from './sectpr-rewrite'
@@ -829,7 +831,10 @@ export async function buildDocBytes(ctx: FileActionContext): Promise<Uint8Array 
     edits: ctx.sectionHfEdits,
     links: ctx.hfLinks,
   })
+  const aigc = currentAigcMeta()
   const bytes = await saveDocx(doc.parsed, saveBlocks, {
+    // AI 生成内容隐式标识(闩锁式:置位后每次保存都携带)
+    aiProvenance: aigc ? aigcMetaJson(aigc) : undefined,
     newPictures: Object.keys(plan.newPictures).length > 0 ? plan.newPictures : undefined,
     section: ctx.sectionDirty && ctx.section ? ctx.section : undefined,
     sectionStartType: ctx.trailingStartType ?? undefined,
@@ -939,6 +944,8 @@ let docGeneration = 0
 export function noteDocumentSwapped(): void {
   pathlessDocSavedPath = null
   docGeneration++
+  // 文档更换(打开新文件/新建空白):上一份文档的 AI 隐式标识随之终结
+  clearAigcMeta()
 }
 
 export function currentDocGeneration(): number {
@@ -1346,7 +1353,13 @@ async function printGroupsMerged(
     appRoot?.classList.remove('pv-exporting')
     pvPages.forEach((page) => page.classList.remove('pv-print-skip', 'pv-print-tail'))
   }
-  const result = await window.desktop.saveMergedPdf(fileName, parts, outPath, links)
+  const result = await window.desktop.saveMergedPdf(
+    fileName,
+    parts,
+    outPath,
+    links,
+    currentAigcMeta() ?? undefined,
+  )
   const mixed = groups.some((g) => g.w !== groups[0].w || g.h !== groups[0].h)
   ctx.setStatus(
     result.ok
@@ -1419,7 +1432,15 @@ export async function exportPdf(ctx: FileActionContext, outPath?: string): Promi
       // preview open but uniform paper: single export at the preview size
       const g = groups[0]
       if (g) {
-        const result = await window.desktop.exportPdf(doc.fileName, g.w, g.h, outPath, scale, links)
+        const result = await window.desktop.exportPdf(
+          doc.fileName,
+          g.w,
+          g.h,
+          outPath,
+          scale,
+          links,
+          currentAigcMeta() ?? undefined,
+        )
         if (result.ok) {
           ctx.setStatus(t('appExportedPdf', { path: result.path ?? '' }))
           return true

@@ -4306,6 +4306,7 @@ async function writeWorkbookTo(
     dvStates,
     sheetProtections,
     tabColorStates,
+    ...(request.aiProvenance === undefined ? {} : { aigcProvenance: request.aiProvenance }),
     definedNamesState: request.definedNamesState,
     themeState: request.themeState,
     workbookProtectionState: request.workbookProtectionState,

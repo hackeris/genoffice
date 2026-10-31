@@ -140,6 +140,7 @@ import {
 // From its own electron-utils subpath rather than the package barrel: the
 // barrel drags Electron-only modules into headless bundles.
 import { atomicWriteFile } from '@genoffice/electron-utils/atomic-write'
+import { aigcMetaJson, newAigcMeta } from '@genoffice/electron-utils/aigc-meta'
 import { DEFAULT_PICTURE_DPI, pictureFrame } from './picture-frame'
 import { refineComplexWidths, shapedMetricsReady } from './shaped-metrics'
 import { cfbKind, isCfbHeader } from './cfb-sniff'
@@ -482,7 +483,9 @@ export async function saveSessionDeckTo(session: Session, filePath: string): Pro
   // yet (the dialog-driven paths always land in an existing folder)
   await mkdir(dirname(filePath), { recursive: true })
   const metaRevAtSave = session.metaRev ?? 0
-  await savePptxToFile(session.opened, filePath)
+  await savePptxToFile(session.opened, filePath, {
+    aiProvenance: session.aiProvenance ?? undefined,
+  })
   session.path = filePath
   autosaveBackoff.delete(filePath)
   // mirror slides:save-as: a saved deck is no longer an unsaved untitled draft
@@ -621,7 +624,9 @@ setInterval(() => {
       }
       try {
         await mkdir(dirname(target), { recursive: true })
-        await savePptxToFile(session.opened, target)
+        await savePptxToFile(session.opened, target, {
+          aiProvenance: session.aiProvenance ?? undefined,
+        })
         autosaveBackoff.delete(backoffKey)
       } catch (error) {
         autosaveBackoff.set(backoffKey, AUTOSAVE_BACKOFF_TICKS)
@@ -1800,6 +1805,17 @@ export function registerSlidesIpc(): void {
     return applySessionTxn(session, req)
   })
 
+  ipcMain.handle('slides:ai-latch', (e, provider: unknown) => {
+    // The latch stores the full TC260 JSON on the deck's session (built once per
+    // deck, so every save and export carries the same ProduceID); the renderer
+    // only knows the provider id. Session-scoped: another window's deck, or a
+    // deck opened later, never inherits it.
+    if (typeof provider !== 'string') return
+    const session = sessions.get(e.sender.id)
+    if (session && session.aiProvenance === undefined) {
+      session.aiProvenance = aigcMetaJson(newAigcMeta(provider))
+    }
+  })
   // The whole edit script as ONE transaction: the collected primitives arrive in a
   // single IPC, compile to ops (script-map), and apply atomically — the executor
   // owns validation, rollback and the journal. Autofit is a render concern and
@@ -4448,7 +4464,9 @@ export function registerSlidesIpc(): void {
     }
     try {
       const metaRevAtSave = session.metaRev ?? 0
-      await savePptxToFile(session.opened, session.path)
+      await savePptxToFile(session.opened, session.path, {
+        aiProvenance: session.aiProvenance ?? undefined,
+      })
       autosaveBackoff.delete(session.path)
       void rm(autosavePathFor(session.path), { force: true }).catch(() => {})
       dropUntitledRecovery(e.sender.id)
@@ -4480,7 +4498,9 @@ export function registerSlidesIpc(): void {
     if (r.canceled || !r.filePath) return { ok: false }
     try {
       const metaRevAtSave = session.metaRev ?? 0
-      await savePptxToFile(session.opened, r.filePath)
+      await savePptxToFile(session.opened, r.filePath, {
+        aiProvenance: session.aiProvenance ?? undefined,
+      })
       session.path = r.filePath
       autosaveBackoff.delete(r.filePath)
       dropUntitledRecovery(e.sender.id)
@@ -4560,9 +4580,12 @@ export function registerSlidesIpc(): void {
     },
   )
 
-  ipcMain.handle('slides:export-pdf', async (_e, op: ExportPdfOp): Promise<ExportPdfResult> => {
+  ipcMain.handle('slides:export-pdf', async (e, op: ExportPdfOp): Promise<ExportPdfResult> => {
+    const aiProvenance = sessions.get(e.sender.id)?.aiProvenance
     return exportSlidesPdf({
       ...op,
+      // same latch the pptx saves carry; the deck was AI-edited when set
+      ...(aiProvenance === undefined ? {} : { aiProvenanceJson: aiProvenance }),
       // hidden window: without this, throttled timers/rAF stall the
       // PRINT_READY_SCRIPT settle wait (same as the headless export window)
       createWindow: () =>

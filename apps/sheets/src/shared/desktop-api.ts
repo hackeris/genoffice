@@ -2010,6 +2010,8 @@ export const workbookSaveRequestSchema = z
     /// carries the transfer id and an empty edits array, and the main process
     /// splices the accumulated chunks back in before applying.
     editsTransferId: z.string().uuid().optional(),
+    /// AI 生成内容隐式标识(TC260 七字段 JSON);闩锁置位后由渲染层携带
+    aiProvenance: z.string().max(4_000).optional(),
     bulkConstantFills: z.array(workbookBulkConstantFillSchema).max(1_000).optional(),
     structuralOps: z.array(workbookStructuralOpSchema).max(1_000),
     chartEdits: z.array(workbookChartEditSchema).max(100),

@@ -456,6 +456,91 @@ async function ensureDynamicArrayMetadata(
   return 1
 }
 
+/// AI 生成内容隐式标识:docProps/custom.xml 单属性 AIGC(TC260 七字段
+/// JSON,由调用方传入),merge-or-create;Content_Types override 与包级
+/// relationship 同步补,全部记入 touchedEntries。幂等。
+async function ensureAigcProvenance(
+  pkg: PackageEditor,
+  touchedEntries: Set<string>,
+  aigcJson: string,
+): Promise<void> {
+  const partPath = 'docProps/custom.xml'
+  const escaped = aigcJson.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const propertyTag =
+    `<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" name="AIGC">` +
+    `<vt:lpwstr>${escaped}</vt:lpwstr></property>`
+  if (await pkg.has(partPath)) {
+    const existing = await pkg.readText(partPath)
+    // drop any previous AIGC property, keep every other property (and pids)
+    const propertyRe =
+      /<(?:[A-Za-z_][\w.-]*:)?property\b[^>]*>[\s\S]*?<\/(?:[A-Za-z_][\w.-]*:)?property\s*>/g
+    let maxPid = 1
+    for (const property of existing.match(propertyRe) ?? []) {
+      const pid = Number(/\bpid\s*=\s*"(\d+)"/.exec(property)?.[1])
+      if (Number.isSafeInteger(pid)) maxPid = Math.max(maxPid, pid)
+    }
+    const withoutOld = existing.replace(propertyRe, (property) =>
+      /name="AIGC"/.test(property) ? '' : property,
+    )
+    const property =
+      `<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="${maxPid + 1}" name="AIGC">` +
+      `<vt:lpwstr>${escaped}</vt:lpwstr></property>`
+    const selfClosing = /<((?:[A-Za-z_][\w.-]*:)?Properties)\b([^>]*?)\/>/
+    const empty = selfClosing.exec(withoutOld)
+    if (empty) {
+      pkg.write(
+        partPath,
+        withoutOld.replace(selfClosing, () => `<${empty[1]}${empty[2]}>${property}</${empty[1]}>`),
+      )
+    } else {
+      pkg.write(
+        partPath,
+        withoutOld.replace(/<\/(?:[A-Za-z_][\w.-]*:)?Properties\s*>/, (close) => `${property}${close}`),
+      )
+    }
+  } else {
+    pkg.add(
+      partPath,
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" ' +
+        'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">' +
+        `<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="2" name="AIGC">` +
+        `<vt:lpwstr>${escaped}</vt:lpwstr></property></Properties>`,
+    )
+  }
+  touchedEntries.add(partPath)
+
+  const relationshipsPath = '_rels/.rels'
+  const relationships = await pkg.readText(relationshipsPath)
+  if (relationships === null) {
+    pkg.add(
+      relationshipsPath,
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties" Target="docProps/custom.xml"/>' +
+        '</Relationships>',
+    )
+    touchedEntries.add(relationshipsPath)
+  } else if (
+    !relationships.includes('relationships/custom-properties') &&
+    relationships.includes('</Relationships>')
+  ) {
+    const relationship =
+      `<Relationship Id="${nextFreeRelationshipId(relationships)}" ` +
+      `Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties" Target="docProps/custom.xml"/>`
+    pkg.write(relationshipsPath, relationships.replace('</Relationships>', `${relationship}</Relationships>`))
+    touchedEntries.add(relationshipsPath)
+  }
+
+  const contentTypesPath = '[Content_Types].xml'
+  const contentTypes = await pkg.readText(contentTypesPath)
+  if (contentTypes && !contentTypes.includes('PartName="/docProps/custom.xml"')) {
+    const override = `<Override PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"/>`
+    pkg.write(contentTypesPath, contentTypes.replace('</Types>', `${override}</Types>`))
+    touchedEntries.add(contentTypesPath)
+  }
+}
+
 function markDynamicArrayAnchor(worksheetXml: string, address: string, cm: number): string {
   const cellPattern = new RegExp(`<c\\b([^>]*)\\br="${address}"([^>]*)>`)
   return worksheetXml.replace(cellPattern, (open, before: string, after: string) =>
@@ -743,6 +828,8 @@ export async function planCellEditsToXlsx(
   bulkConstantFills: readonly BulkConstantFill[] = [],
   tabColorStates: readonly SheetTabColorState[] = [],
   tableEdits: readonly SheetTableEdit[] = [],
+  /// AI 生成内容隐式标识(TC260 七字段 JSON);缺省 = 不注入
+  aigcProvenance?: string,
 ): Promise<MutationPlan> {
   // A pending pivot pins final coordinates for its source and output; shifts
   // on either sheet, and sheet renames (worksheetSource@sheet), would desync
@@ -1454,6 +1541,9 @@ export async function planCellEditsToXlsx(
     touchedEntries.add(workbookPath)
   }
 
+  if (aigcProvenance !== undefined) {
+    await ensureAigcProvenance(pkg, touchedEntries, aigcProvenance)
+  }
   return pkg.toPlan(touchedEntries)
 }
 

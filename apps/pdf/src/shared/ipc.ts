@@ -706,6 +706,8 @@ export interface SavePdfRequest {
   /** New page order (array of original page indices, excluding deleted); omitted if unreordered */
   pageOrder?: number[]
   metadata?: MetadataInput
+  /** TC260 AIGC JSON (the renderer's provenance latch); stamps catalog Metadata + Info /AIGC */
+  aiProvenance?: string
 }
 
 /** A text edit that could not be matched to the document at save time and was skipped */

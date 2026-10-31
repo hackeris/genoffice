@@ -63,6 +63,7 @@ import { pastedBase64Image } from './base64-paste'
 import { createElectronTransport } from './transport'
 import { DOC_NAV_SCHEME, parseDocNavHref } from './doc-nav'
 import { EditQueueCard } from './EditQueueCard'
+import { latchAigc } from './aigc-latch'
 import {
   buildQueueInstruction,
   buildQueueSummary,
@@ -729,7 +730,11 @@ export function AiPanel({
           }))
         },
         onToolExecuted: ({ call, execution, snapshotBefore }) => {
-          if (execution.mutated) runMutatedRef.current = true
+          if (execution.mutated) {
+            runMutatedRef.current = true
+            // provenance latch: a later PDF export of this file carries the marking
+            latchAigc(settingsRef.current?.provider ?? '')
+          }
           if (snapshotBefore !== undefined) {
             const label = runInstructionRef.current.slice(0, 40)
             const time = new Date().toLocaleTimeString([], {

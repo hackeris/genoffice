@@ -110,6 +110,8 @@ export interface StreamingSaveRequest {
   readonly workbookProtectionState?: { readonly lockStructure: boolean } | null | undefined
   readonly protectedRangeStates?: readonly SheetProtectedRangesState[] | undefined
   readonly tabColorStates?: readonly SheetTabColorState[] | undefined
+  /// AI 生成内容隐式标识(TC260 七字段 JSON);缺省 = 不注入
+  readonly aigcProvenance?: string
 }
 
 export interface StreamingSaveResult {
@@ -179,6 +181,7 @@ export async function saveWorkbookViaSidecar(
       request.bulkConstantFills ?? [],
       request.tabColorStates ?? [],
       request.tableEdits ?? [],
+      request.aigcProvenance,
     )
 
     const replacements = await writePlanContents(workDir, 'replace', plan.replaced)

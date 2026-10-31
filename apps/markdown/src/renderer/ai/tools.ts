@@ -330,7 +330,7 @@ async function insertImageFromUrl(
   url: string,
   input: { afterIndex?: unknown; alt?: unknown },
   signal: AbortSignal | undefined,
-  labels: { fail: string; done: string },
+  labels: { fail: string; done: string; imported?: boolean },
 ): Promise<ToolExecution> {
   const fetched = await window.markdownApi.fetchImage(url)
   // never write after the user hit stop (the download may resolve long after the abort)
@@ -363,6 +363,8 @@ async function insertImageFromUrl(
       : maxIndex
   const r = runOps(editor, [{ op: 'insertImage', after, src: rel, alt: String(input.alt ?? '') }], {
     source: 'ai',
+    // 网图是外来内容:浮标不锚它(AI 生成图才锚)
+    ...(labels.imported ? { provenance: 'imported' as const } : {}),
   })
   const res = r.results[0]!
   if (!res.ok) return fail(res.error, labels.fail)
@@ -545,6 +547,7 @@ export function executeTool(
       return insertImageFromUrl(editor, url, call.input, signal, {
         fail: t('aiToolInsertImage'),
         done: t('aiToolInsertImageDone'),
+        imported: true,
       })
     }
 

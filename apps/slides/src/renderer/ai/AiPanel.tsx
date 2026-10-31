@@ -1417,6 +1417,10 @@ export function AiPanel({
           patchLastAssistant((last) => ({ tools: [...(last.tools ?? []), activity] }))
         },
         onToolExecuted: ({ call, execution }) => {
+          if (execution.mutated) {
+            // AI 内容落进当前 deck:置位隐式标识闩锁(保存时写 docProps/custom.xml)
+            void window.slidesApi.aiLatch?.(settingsRef.current.provider)
+          }
           const activity: ToolActivity = {
             name: call.name,
             summary: execution.summary,

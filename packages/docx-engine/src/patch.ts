@@ -101,6 +101,7 @@ import {
   CUSTOM_PROPERTIES_CONTENT_TYPE,
   CUSTOM_PROPERTIES_PATH,
   CUSTOM_PROPERTIES_REL_TYPE,
+  patchAigcCustomPropertiesXml,
   patchZoteroDocumentDataXml,
 } from './zotero-doc-props'
 
@@ -374,6 +375,8 @@ export interface SaveOptions {
   newPictures?: Record<string, { base64: string; mime: NewImage['mime'] }>
   /** Zotero document preferences; written as Word-compatible 255-character custom-property chunks */
   zoteroDocumentData?: string
+  /** AI 生成内容隐式标识:TC260 七字段 JSON,写入 docProps/custom.xml 的 AIGC 属性(与既有自定义属性合并) */
+  aiProvenance?: string
   /** replace the trailing w:sectPr with this XML before the field-level options below apply (headless editors that keep the sectPr itself) */
   trailingSectPr?: string
   /** rewrite page size / margins in the trailing w:sectPr */
@@ -674,6 +677,7 @@ export async function saveDocx(
     options.section === undefined &&
     options.trailingSectPr === undefined &&
     options.zoteroDocumentData === undefined &&
+    options.aiProvenance === undefined &&
     options.sectionStartType === undefined &&
     options.pgNumType === undefined &&
     options.pageColor === undefined &&
@@ -711,15 +715,29 @@ export async function saveDocx(
   const docPath = (await resolveMainDocumentPath(zip)) ?? 'word/document.xml'
 
   const customPropertiesEntry = zip.file(CUSTOM_PROPERTIES_PATH)
+  const existingCustomPropsXml = customPropertiesEntry
+    ? await customPropertiesEntry.async('string')
+    : null
   const shouldWriteZoteroData =
     options.zoteroDocumentData !== undefined &&
-    (options.zoteroDocumentData !== '' || customPropertiesEntry !== null)
-  const customPropertiesXml = shouldWriteZoteroData
-    ? patchZoteroDocumentDataXml(
-        customPropertiesEntry ? await customPropertiesEntry.async('string') : null,
-        options.zoteroDocumentData!,
-      )
-    : null
+    (options.zoteroDocumentData !== '' || existingCustomPropsXml !== null)
+  const shouldWriteAiProvenance =
+    options.aiProvenance !== undefined &&
+    (options.aiProvenance !== '' || existingCustomPropsXml !== null)
+  // compose in one pass: both writers merge into (or create) the same part
+  let customPropertiesXml: string | null = existingCustomPropsXml
+  if (shouldWriteZoteroData) {
+    customPropertiesXml = patchZoteroDocumentDataXml(
+      customPropertiesXml,
+      options.zoteroDocumentData!,
+    )
+  }
+  if (shouldWriteAiProvenance) {
+    customPropertiesXml = patchAigcCustomPropertiesXml(
+      customPropertiesXml,
+      options.aiProvenance!,
+    )
+  }
   const customPropertiesIsNew = customPropertiesXml !== null && customPropertiesEntry === null
   const rootRelsPath = '_rels/.rels'
   let rootRelsXml: string | null = null

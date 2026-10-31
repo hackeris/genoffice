@@ -5,6 +5,7 @@
  * path (proving fidelity). Element-level patch regeneration is left for Phase 3.
  */
 import { stripRedactExt, syncRedactExt } from './redaction-xml'
+import { applyAiProvenance } from './aigc'
 import JSZip from 'jszip'
 import { PackageArchive, relsPathFor, resolveTarget, type Relationship } from './zip'
 import { parseClrMap, parseTheme, type Theme } from './theme'
@@ -693,7 +694,16 @@ export function reparseDeck(opened: OpenedPptx): OpenedPptx {
  * - Non-text elements (pictures/passthrough) don't support content editing yet;
  *   even flagged dirty they use original bytes.
  */
-export async function savePptx(opened: OpenedPptx): Promise<Uint8Array> {
+export interface SavePptxOptions {
+  /** AI 生成内容隐式标识:TC260 七字段 JSON,写入 docProps/custom.xml 的 AIGC 属性 */
+  aiProvenance?: string
+}
+
+export async function savePptx(
+  opened: OpenedPptx,
+  options: SavePptxOptions = {},
+): Promise<Uint8Array> {
+  if (options.aiProvenance) applyAiProvenance(opened.archive, options.aiProvenance)
   try {
     return await buildZip(opened).generateAsync({
       type: 'uint8array',
@@ -718,7 +728,12 @@ export async function savePptx(opened: OpenedPptx): Promise<Uint8Array> {
  * stream's 'error' event — not just the returned promise — has to be handled or the
  * throw escapes as an uncaught exception and takes the process down.
  */
-export async function savePptxToFile(opened: OpenedPptx, filePath: string): Promise<void> {
+export async function savePptxToFile(
+  opened: OpenedPptx,
+  filePath: string,
+  options: SavePptxOptions = {},
+): Promise<void> {
+  if (options.aiProvenance) applyAiProvenance(opened.archive, options.aiProvenance)
   const { createWriteStream } = await import('node:fs')
   const { pipeline } = await import('node:stream/promises')
   const source = buildZip(opened).generateNodeStream({

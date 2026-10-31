@@ -29,6 +29,7 @@ import sendEnterOn from '../assets/send-enter-on.png'
 import sendEnterOff from '../assets/send-enter-off.png'
 import sendStop from '../assets/send-stop.png'
 import { clearAiHighlights } from '../editor/aiHighlight'
+import { latchAigc } from './aigc-latch'
 import { setInactiveSelectionShown } from '../editor/inactiveSelection'
 import { createMarkdownSkill, MARKDOWN_RULES } from './markdown-skill'
 import { MindMapCard } from './MindMapCard'
@@ -409,7 +410,11 @@ export function AiPanel({
           }))
         },
         onToolExecuted: ({ call, execution, snapshotBefore }) => {
-          if (execution.mutated) runMutatedRef.current = true
+          if (execution.mutated) {
+            runMutatedRef.current = true
+            // provenance latch: a later PDF export of this file carries the marking
+            latchAigc(settingsRef.current?.provider ?? '')
+          }
           if (snapshotBefore !== undefined) {
             const label = runInstructionRef.current.slice(0, 40)
             const time = new Date().toLocaleTimeString([], {

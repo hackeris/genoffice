@@ -18,6 +18,7 @@ import {
   rgb,
 } from 'pdf-lib'
 import type { PDFPage } from 'pdf-lib'
+import { applyAiProvenanceToPdfDoc } from '@genoffice/electron-utils/pdf-aigc'
 import { VISUAL_SIGNATURE_CONTENT_PREFIX } from '../shared/ipc'
 import type {
   BlankPageInput,
@@ -1317,6 +1318,9 @@ export async function applySaveRequest(
     })
   }
   if (request.metadata) applyMetadata(pdfDoc, request.metadata)
+  // the document was AI-edited when the renderer's latch is set: stamp the
+  // TC260 metadata (catalog Metadata + Info /AIGC) into the live doc
+  if (request.aiProvenance) applyAiProvenanceToPdfDoc(pdfDoc, request.aiProvenance)
   // Page thumbnails and producer piece-info can retain a pre-redaction rendering of
   // the same page. They are page-local derived data, so remove them for every affected
   // page before the native final serialization.

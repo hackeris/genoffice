@@ -70,6 +70,9 @@ import {
   writeJsonAtomic,
   recoveryCopyDiskNewer,
 } from '@genoffice/electron-utils'
+// subpath rather than the barrel: keeps pdf-lib out of every other barrel consumer
+import { applyAiProvenanceToPdfDoc, stampAiGeneratedPdf } from '@genoffice/electron-utils/pdf-aigc'
+import { aigcMetaJson } from '@genoffice/electron-utils/aigc-meta'
 import { configureMetricsCache, familyVerticalMetrics } from '@genoffice/font-metrics'
 import { createI18n, getUiLang, normalizeLang, setUiLang } from '@genoffice/i18n'
 import { ProjectStore } from '@genoffice/project-store'
@@ -5292,6 +5295,7 @@ export function registerDocsIpc(): void {
       outPath?: string,
       scale?: number,
       links?: unknown,
+      aigc?: { provider: unknown; produceId: unknown },
     ) => {
       // Renderer-supplied page geometry reaches Chromium printToPDF verbatim:
       // reject non-finite/out-of-range sizes (0.1in..50in) and scales (0.1..5),
@@ -5327,7 +5331,14 @@ export function registerDocsIpc(): void {
           ...pdfScale(scale),
         })
         const data = await withInternalLinks(printed, links)
-        await atomicWriteFile(filePath, data)
+        // the document was AI-edited when the renderer's latch is set: stamp the
+        // TC260 metadata (catalog Metadata + Info /AIGC) before it hits disk
+        const aigcMeta: { provider: string; produceId: string } | null =
+          typeof aigc?.provider === 'string' && typeof aigc?.produceId === 'string'
+            ? { provider: aigc.provider, produceId: aigc.produceId }
+            : null
+        const stamped = aigcMeta ? Buffer.from(await stampAiGeneratedPdf(data, aigcMeta)) : data
+        await atomicWriteFile(filePath, stamped)
         if (!isImageExportTemp(event.sender.id, filePath)) openGeneratedFile(filePath)
         return { ok: true, path: filePath }
       } catch (err) {
@@ -5511,6 +5522,7 @@ export function registerDocsIpc(): void {
       base64Parts: string[],
       outPath?: string,
       links?: unknown,
+      aigc?: { provider: unknown; produceId: unknown },
     ) => {
       let filePath = outPath ?? null
       if (filePath && !canPdfWrite(event.sender.id, filePath)) {
@@ -5535,6 +5547,13 @@ export function registerDocsIpc(): void {
           for (const page of pages) merged.addPage(page)
         }
         if (Array.isArray(links) && links.length > 0) addPdfInternalLinks(merged, links)
+        // the document was AI-edited when the renderer's latch is set: stamp the
+        // TC260 metadata (catalog Metadata + Info /AIGC) before it hits disk
+        const aigcMeta: { provider: string; produceId: string } | null =
+          typeof aigc?.provider === 'string' && typeof aigc?.produceId === 'string'
+            ? { provider: aigc.provider, produceId: aigc.produceId }
+            : null
+        if (aigcMeta) applyAiProvenanceToPdfDoc(merged, aigcMetaJson(aigcMeta))
         await atomicWriteFile(filePath, Buffer.from(await merged.save()))
         if (!isImageExportTemp(event.sender.id, filePath)) openGeneratedFile(filePath)
         return { ok: true, path: filePath }

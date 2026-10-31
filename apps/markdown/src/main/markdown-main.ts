@@ -35,6 +35,8 @@ import { generateImageTool, documentMediaRoots } from '@genoffice/ai-search'
 import { ImageExportSessions } from './image-export'
 import { printMarkdownPdf } from './print-pdf'
 import { atomicWriteFile } from './atomic-write'
+// subpath rather than the barrel: keeps pdf-lib out of every other barrel consumer
+import { stampAiGeneratedPdf } from '@genoffice/electron-utils/pdf-aigc'
 import {
   copyImageIntoOwnedAssets,
   discardPendingOwnedAssets,
@@ -1114,9 +1116,18 @@ function registerMarkdownIpc(): void {
               configuredDefaultSaveDir(app),
             )
       if (picked.canceled || !picked.filePath) return { ok: true, canceled: true }
+      // the document was AI-edited when the renderer's latch is set: stamp the
+      // TC260 metadata (catalog Metadata + Info /AIGC) before it hits disk
+      const aigcMeta: { provider: string; produceId: string } | null =
+        typeof request.aigc?.provider === 'string' && typeof request.aigc?.produceId === 'string'
+          ? { provider: request.aigc.provider, produceId: request.aigc.produceId }
+          : null
       try {
         const pdf = await printMarkdownPdf(request.html)
-        await writeFile(picked.filePath, pdf)
+        const finalPdf = aigcMeta
+          ? await stampAiGeneratedPdf(new Uint8Array(pdf), aigcMeta)
+          : new Uint8Array(pdf)
+        await writeFile(picked.filePath, Buffer.from(finalPdf))
         openExportedPdf(picked.filePath)
         return { ok: true, path: picked.filePath }
       } catch (err) {

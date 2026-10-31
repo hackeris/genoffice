@@ -113,6 +113,9 @@ export function planWriteRanges(plan: ChangePlan): Map<string, WriteRange[]> {
   for (const structural of plan.structuralChanges) {
     const op = structural.op as Record<string, unknown>
     if (typeof op.sheetId !== 'string') continue
+    // add_image 的 path 是 http(s) 即搜来的网图:AI 只是执行插入,内容不是
+    // 生成的,浮标不锚它(本地生成文件才锚)
+    if (op.op === 'add_image' && /^https?:\/\//i.test(String(op.path ?? ''))) continue
     for (const range of opRanges(op)) push(op.sheetId, range)
   }
   for (const [sheetId, list] of bySheet) {

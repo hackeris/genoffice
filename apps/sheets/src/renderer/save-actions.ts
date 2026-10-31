@@ -6,6 +6,8 @@
  * per call so refs and state never go stale.
  */
 import type { WorkbookFile, WorkbookFilterState } from '../shared/desktop-api'
+import { aigcMetaJson } from '@genoffice/electron-utils/aigc-meta'
+import { currentAigcMeta } from './aigc-latch'
 import {
   carryLateJournalCells,
   isSheetRemoved,
@@ -423,6 +425,7 @@ export async function handleSave(
     const result = await window.desktopApi.saveWorkbookEdits({
       sessionId: state.file.sessionId,
       mode,
+      ...(currentAigcMeta() ? { aiProvenance: aigcMetaJson(currentAigcMeta()!) } : {}),
       ...(restoreWriteBack ? { restoreWriteBack: true } : {}),
       ...(quiet ? { quiet: true } : {}),
       ...(csvContent === undefined ? {} : { csvContent }),
@@ -509,6 +512,7 @@ export async function handleSave(
         // an unsaved new workbook's quiet save writes its backing file in
         // place; without the flag the second phase would open Save As
         ...(quiet ? { quiet: true } : {}),
+        ...(currentAigcMeta() ? { aiProvenance: aigcMetaJson(currentAigcMeta()!) } : {}),
         edits: [],
         bulkConstantFills: [],
         structuralOps: [],

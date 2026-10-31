@@ -104,6 +104,24 @@ describe('planWriteRanges', () => {
     ])
   })
 
+  it('skips web-image add_image (AI-inserted, not AI-generated)', () => {
+    const ranges = planWriteRanges(
+      plan({
+        structuralChanges: [
+          {
+            op: { op: 'add_image', sheetId: 's1', path: 'https://example.com/pic.jpg', anchorCell: 'B2' },
+            label: 'web',
+          },
+          {
+            op: { op: 'add_image', sheetId: 's1', path: '/data/gen.png', anchorCell: 'D4' },
+            label: 'gen',
+          },
+        ] as ChangePlan['structuralChanges'],
+      }),
+    )
+    expect(ranges.get('s1')).toEqual([{ startRow: 3, startColumn: 3, endRow: 3, endColumn: 3 }])
+  })
+
   it('skips malformed addresses instead of throwing', () => {
     const ranges = planWriteRanges(
       plan({

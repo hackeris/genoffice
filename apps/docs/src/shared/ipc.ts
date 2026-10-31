@@ -506,7 +506,9 @@ export interface DesktopApi {
   /** installed printers for the in-app print dialog */
   listPrinters(): Promise<PrinterInfo[]>
   /** render the document to PDF and ask where to save; size in twips.
-   *  outPath is only honored when a previous export dialog chose that exact path */
+   *  outPath is only honored when a previous export dialog chose that exact path.
+   *  aigc: the renderer's provenance latch — the exported PDF gets the TC260
+   *  implicit marking when set */
   exportPdf(
     defaultName: string,
     pageWidthTwips: number,
@@ -514,6 +516,7 @@ export interface DesktopApi {
     outPath?: string,
     scale?: number,
     links?: PdfInternalLink[],
+    aigc?: { provider: string; produceId: string },
   ): Promise<{ ok: boolean; path?: string; error?: string }>
   exportHtml(
     defaultName: string,
@@ -533,12 +536,15 @@ export interface DesktopApi {
     scale?: number,
   ): Promise<{ ok: boolean; base64?: string; error?: string }>
   /** Merge grouped PDF fragments in order and write to disk (missing outPath opens
-   *  the save dialog; a given outPath must come from a previous export dialog) */
+   *  the save dialog; a given outPath must come from a previous export dialog).
+   *  aigc: the renderer's provenance latch — the merged PDF gets the TC260
+   *  implicit marking when set */
   saveMergedPdf(
     defaultName: string,
     base64Parts: string[],
     outPath?: string,
     links?: PdfInternalLink[],
+    aigc?: { provider: string; produceId: string },
   ): Promise<{ ok: boolean; path?: string; error?: string }>
   /** Export as images: the folder picker plus a pre-authorized temp PDF path the
    *  regular PDF export writes to silently (no reveal, no open) */

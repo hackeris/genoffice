@@ -175,6 +175,7 @@ import {
 import { AiWriteChip } from './components/AiWriteChip'
 import { clearLastAiWrite, planWriteRanges, recordAiWrite } from './ai-write-anchor'
 import { clearAiWriteOutline, currentOutlineTheme, setAiWriteOutline } from './ai-write-outline'
+import { clearAigcMeta, latchAigc } from './aigc-latch'
 import { installOutlineGutter, type OutlineGutterHandle } from './outline-gutter'
 import {
   loadRowOutlines,
@@ -3752,6 +3753,8 @@ export function App({
       recordAiWrite(planWriteRanges(stored.plan))
       if (runtime) setAiWriteOutline(runtime, currentOutlineTheme())
       setAiWriteTick((tick) => tick + 1)
+      // 隐式标识闩锁:保存时写 docProps/custom.xml
+      latchAigc(aiSettingsRef.current?.provider ?? '')
       lazyPreviewRef.current = null
       setPreview(null)
     } else if (outcome !== verified && outcome.reason) {
@@ -3798,6 +3801,7 @@ export function App({
         recordAiWrite(planWriteRanges(plan))
         setAiWriteOutline(runtime, currentOutlineTheme())
         setAiWriteTick((tick) => tick + 1)
+        latchAigc(aiSettingsRef.current?.provider ?? '')
       }
       return outcome
     })
@@ -4238,6 +4242,8 @@ export function App({
     opts?: { continueChat?: boolean; onInitialRangeLoaded?: () => void },
   ): Promise<boolean> {
     if (!(await commitActiveEditor())) return false
+    // provenance latch is per workbook: the previous file's marking ends here
+    clearAigcMeta()
     await untilCellFontsLoaded(registerCellFontAliases(workbookFontFamilies(opened)))
     if (opts?.continueChat) chatContinuesRef.current = true
     const selected: WorkbookFile = {

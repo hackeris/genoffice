@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, ReactElement } from 'react'
 import { AgentLoop } from '@genoffice/agent-core'
 import { imageGenerationAvailable, type AiSettings } from '@genoffice/ai-provider/browser'
+import { latchAigc } from './aigc-latch'
 import { pdfWritePageOf } from './write-page'
 import {
   AiComposer,
@@ -421,6 +422,8 @@ export function AiPanel({
           setPhase('working')
           if (execution.mutated) runMutatedRef.current = true
           if (execution.mutated && !execution.isError) {
+            // provenance latch: every later save/export of this file carries the marking
+            latchAigc(settingsRef.current?.provider ?? '')
             const page = pdfWritePageOf(call)
             if (page !== null) onWrittenPageRef.current?.(page)
           }

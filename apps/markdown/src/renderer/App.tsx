@@ -31,6 +31,7 @@ import {
   type DocEnvelope,
 } from './markdown/docText'
 import { buildSourceMap, spliceMarkdown, type SourceMap } from './markdown/sourceSplice'
+import { clearAigcMeta, currentAigcMeta } from './ai/aigc-latch'
 import { applySourceText } from './markdown/sourceView'
 import { isSourceMode, textModeForPath, type TextMode } from '../shared/text-mode'
 import { renameAction } from '../shared/rename-mode'
@@ -406,6 +407,7 @@ export default function App() {
         if (path) {
           const raw = await window.markdownApi.readFile(path)
           if (cancelled) return
+          clearAigcMeta()
           loadFromPath(path, raw)
           jumpToWikiFragment(path)
         } else {
@@ -714,6 +716,8 @@ export default function App() {
             html,
             suggestedName,
             ...(outPath ? { outPath } : {}),
+            // the exported PDF carries the TC260 marking when the doc was AI-edited
+            ...(currentAigcMeta() ? { aigc: currentAigcMeta()! } : {}),
           })
           if (!result.ok) console.error('[markdown] pdf export failed:', result.error)
           return result.ok && !('canceled' in result)

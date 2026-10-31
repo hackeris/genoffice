@@ -19,6 +19,9 @@ export default defineConfig({
       '@genoffice/electron-utils/atomic-write': local(
         '../../packages/electron-utils/src/atomic-write.ts',
       ),
+      '@genoffice/electron-utils/aigc-meta': local(
+        '../../packages/electron-utils/src/aigc-meta.ts',
+      ),
       '@genoffice/electron-utils/safe-external-url': local(
         '../../packages/electron-utils/src/safe-external-url.ts',
       ),
