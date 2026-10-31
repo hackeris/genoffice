@@ -56,6 +56,8 @@ function opRanges(op: Record<string, unknown>): WriteRange[] {
   addRange(op.range)
   addRange(op.target)
   addAddress(op.start)
+  // add_image writes at its anchor cell (single cell provenance)
+  addAddress(op.anchorCell)
   // structural row/column spans: insert_rows {row, count} touches rows
   // (1-based, converted to 0-based below); full band across the other axis
   const row = Number(op.row)

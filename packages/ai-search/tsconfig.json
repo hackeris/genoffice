@@ -10,7 +10,8 @@
       "@genoffice/ai-provider": ["../ai-provider/src/index.ts"],
       "@genoffice/electron-utils/remote-image": ["../electron-utils/src/remote-image.ts"],
       "@genoffice/electron-utils/safe-remote-url": ["../electron-utils/src/safe-remote-url.ts"],
-      "@genoffice/electron-utils/generated-images": ["../electron-utils/src/generated-images.ts"]
+      "@genoffice/electron-utils/generated-images": ["../electron-utils/src/generated-images.ts"],
+      "@genoffice/electron-utils/image-aigc": ["../electron-utils/src/image-aigc.ts"]
     }
   },
   "include": ["src", "tests"]

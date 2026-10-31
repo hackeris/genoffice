@@ -21,6 +21,7 @@ import {
 } from '@genoffice/ai-provider'
 // deep imports: the package root re-exports Electron-bound modules, and this file also runs in the genoffice CLI
 import { readGeneratedImage, storeGeneratedImage } from '@genoffice/electron-utils/generated-images'
+import { stampAiGeneratedImage } from '@genoffice/electron-utils/image-aigc'
 import {
   ResponseTooLargeError,
   fetchRemoteImage,
@@ -339,7 +340,14 @@ export async function generateImageTool(
       references,
       transparent: op.transparentBackground === true,
     })
-    return { url: storeGeneratedImage(image.bytes, image.mime) }
+    // 隐式标识:生成字节在唯一落盘口盖 AIGC 元数据章(PNG iTXt / JPEG
+    // XMP),所有端嵌入的都是带章副本;其余格式原样通过
+    return {
+      url: storeGeneratedImage(
+        stampAiGeneratedImage(image.bytes, { provider: String(byok.provider) }),
+        image.mime,
+      ),
+    }
   } catch (err) {
     return { error: errorText(err) }
   }

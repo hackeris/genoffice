@@ -18,6 +18,7 @@
     "./remote-image": "./src/remote-image.ts",
     "./renderer-protocol": "./src/renderer-protocol.ts",
     "./renderer-scheme": "./src/renderer-scheme.ts",
+    "./image-aigc": "./src/image-aigc.ts",
     "./safe-external-url": "./src/safe-external-url.ts",
     "./safe-remote-url": "./src/safe-remote-url.ts"
   },

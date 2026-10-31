@@ -73,6 +73,22 @@ describe('planWriteRanges', () => {
     ])
   })
 
+  it('maps add_image to its anchor cell', () => {
+    const ranges = planWriteRanges(
+      plan({
+        structuralChanges: [
+          {
+            op: { op: 'add_image', sheetId: 's1', path: 'gen.png', anchorCell: 'C3' },
+            label: 'image',
+          },
+        ] as ChangePlan['structuralChanges'],
+      }),
+    )
+    expect(ranges.get('s1')).toEqual([
+      { startRow: 2, startColumn: 2, endRow: 2, endColumn: 2 },
+    ])
+  })
+
   it('collapses a sheet above 200 primitive ranges to its bounding box', () => {
     const cellChanges = Array.from({ length: 201 }, (_, i) => ({
       sheetId: 's1',

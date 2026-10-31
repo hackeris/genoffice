@@ -9,6 +9,9 @@ import { executeOps, opNames } from './ops'
 import { clipExcerpt, repliesOf, resolveCommentAnchor } from './comment-ops'
 import { redactTextBetween } from './redact-view'
 import { insertPictureAtSelection } from '../editor/insert-picture'
+import { changedRangeOf } from '../editor/touched-blocks'
+import { recordAiWrite } from './last-write'
+import type { Transaction } from '@tiptap/pm/state'
 import {
   PAGE_SETUP_TOOL,
   SECTION_BREAK_TOOL,
@@ -981,6 +984,7 @@ async function executeAsyncTool(
           failLabel: t('aiSumGenerateImage'),
           doneLabel: t('aiSumInsertedGenImage'),
           blockLabel: 'Image (AI)',
+          aiGenerated: true,
         },
       )
     }
@@ -1139,7 +1143,7 @@ async function insertImageFromUrl(
   url: string,
   maxW: number,
   signal: AbortSignal | undefined,
-  labels: { failLabel: string; doneLabel: string; blockLabel: string },
+  labels: { failLabel: string; doneLabel: string; blockLabel: string; aiGenerated?: boolean },
 ): Promise<ToolExecution> {
   const fetched = await window.desktop.fetchImage(url)
   // never write after the user hit stop (the download may resolve long after the abort)
@@ -1165,6 +1169,14 @@ async function insertImageFromUrl(
     // freshness baseline stale, so only our own insertion may mark the doc
     // seen. Checked right before the write — there is no async gap after.
     const userEditedDuringFetch = editedExternally(editor)
+    // an AI-generated picture is an AI write like any other: capture the
+    // insertion transaction's range once and anchor the provenance chip to it
+    let written: { from: number; to: number } | null = null
+    const onTransaction = ({ transaction: tr }: { transaction: Transaction }) => {
+      const range = changedRangeOf(tr)
+      if (range) written = range
+    }
+    if (labels.aiGenerated) editor.on('transaction', onTransaction)
     insertPictureAtSelection(editor, {
       dataUrl,
       base64: fetched.base64,
@@ -1173,6 +1185,12 @@ async function insertImageFromUrl(
       heightPx: h,
       label: labels.blockLabel,
     })
+    if (labels.aiGenerated) {
+      editor.off('transaction', onTransaction)
+      // the closure above assigned it; TS's flow analysis can't see that
+      const inserted = written as { from: number; to: number } | null
+      if (inserted) recordAiWrite(inserted.from, inserted.to)
+    }
     if (!userEditedDuringFetch) markDocSeen(editor)
     return {
       output: `Inserted the image (${w}×${h}px).`,
