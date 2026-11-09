@@ -2,6 +2,7 @@ import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it } from 'vitest'
+import { readAiPngStamp } from '@genoffice/electron-utils/image-aigc'
 import { ImageExportSessions } from '../src/main/image-export'
 
 const roots: string[] = []
@@ -64,4 +65,20 @@ it('does not report an empty export as successful', async () => {
   const { root, sessions, id } = await setup()
   await expect(sessions.finish(1, id, true)).rejects.toThrow(/empty/)
   expect(await readdir(root)).toEqual([])
+})
+
+it('stamps page PNGs with the document latch provenance when the session carries it', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'markdown-images-test-'))
+  roots.push(root)
+  const sessions = new ImageExportSessions()
+  const id = await sessions.start(1, root, 'Report', {
+    provider: 'glm',
+    produceId: 'doc-uuid-9',
+  })
+  await sessions.write(1, id, 1, png)
+  const dir = await sessions.finish(1, id, true)
+  const bytes = new Uint8Array(await readFile(join(dir!, 'page-01.png')))
+  const payload = JSON.parse(readAiPngStamp(bytes)!) as Record<string, string>
+  expect(payload.ProduceID).toBe('doc-uuid-9')
+  expect(payload.ContentProducer).toBe('glm')
 })

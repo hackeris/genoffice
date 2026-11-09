@@ -195,8 +195,10 @@ const api: DesktopApi = {
   ) => ipcRenderer.invoke('docs:save-merged-pdf', defaultName, base64Parts, outPath, links, aigc),
   pickExportImagesTarget: () => ipcRenderer.invoke('docs:pick-export-images-target'),
   takeExportPdf: (pdfPath: string) => ipcRenderer.invoke('docs:take-export-pdf', pdfPath),
-  writeExportImage: (dir: string, fileName: string, pngBase64: string) =>
-    ipcRenderer.invoke('docs:write-export-image', dir, fileName, pngBase64),
+  writeExportImage: (dir: string, fileName: string, pngBase64: string, aigc?: {
+    provider: string
+    produceId: string
+  }) => ipcRenderer.invoke('docs:write-export-image', dir, fileName, pngBase64, aigc),
   saveImageAs: (src: string) => ipcRenderer.invoke('docs:save-image-as', src),
   onViewImage: (handler) => {
     const listener = (_event: IpcRendererEvent, src: string) => handler(src)

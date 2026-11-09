@@ -551,11 +551,14 @@ export interface DesktopApi {
   pickExportImagesTarget(): Promise<{ dir: string; pdfPath: string } | null>
   /** Read back and delete the temp PDF written for an image export */
   takeExportPdf(pdfPath: string): Promise<{ ok: boolean; base64?: string; error?: string }>
-  /** Write one page PNG into the folder chosen by pickExportImagesTarget */
+  /** Write one page PNG into the folder chosen by pickExportImagesTarget.
+   *  aigc: the renderer's provenance latch — each page PNG gets the TC260
+   *  implicit marking when set */
   writeExportImage(
     dir: string,
     fileName: string,
     pngBase64: string,
+    aigc?: { provider: string; produceId: string },
   ): Promise<{ ok: boolean; path?: string; error?: string }>
   /** Save a picture the renderer displays (data URL) through a Save dialog */
   saveImageAs(src: string): Promise<{ ok: boolean; path?: string; error?: string }>

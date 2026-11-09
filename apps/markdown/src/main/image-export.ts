@@ -1,12 +1,27 @@
 import { randomUUID } from 'node:crypto'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { stampAiGeneratedPng } from '@genoffice/electron-utils/image-aigc'
+
+/** The renderer's provenance latch, held per export session */
+export interface ExportSessionAigc {
+  provider: string
+  produceId: string
+}
 
 /** Only dialog-approved folders are registered; renderers never supply output paths. */
 export class ImageExportSessions {
-  private sessions = new Map<string, { owner: number; dir: string; pages: number }>()
+  private sessions = new Map<
+    string,
+    { owner: number; dir: string; pages: number; aigc: ExportSessionAigc | null }
+  >()
 
-  async start(owner: number, parent: string, name: string): Promise<string> {
+  async start(
+    owner: number,
+    parent: string,
+    name: string,
+    aigc?: ExportSessionAigc,
+  ): Promise<string> {
     const base =
       name
         .replace(/[/\\:*?"<>|]/g, '_')
@@ -14,7 +29,7 @@ export class ImageExportSessions {
         .trim() || 'Untitled'
     const dir = await mkdtemp(join(parent, `${base}-images-`))
     const id = randomUUID()
-    this.sessions.set(id, { owner, dir, pages: 0 })
+    this.sessions.set(id, { owner, dir, pages: 0, aigc: aigc ?? null })
     return id
   }
 
@@ -32,7 +47,12 @@ export class ImageExportSessions {
     const bytes = Buffer.from(base64, 'base64')
     if (!bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])))
       throw new Error('Invalid PNG data')
-    await writeFile(join(session.dir, `page-${String(page).padStart(2, '0')}.png`), bytes, {
+    // rasterized pages of an AI-mutated document carry the TC260 marking
+    // even though the temp PDF they came from is discarded
+    const stamped = session.aigc
+      ? Buffer.from(stampAiGeneratedPng(new Uint8Array(bytes), session.aigc))
+      : bytes
+    await writeFile(join(session.dir, `page-${String(page).padStart(2, '0')}.png`), stamped, {
       flag: 'wx',
     })
     session.pages = page

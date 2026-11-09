@@ -218,4 +218,31 @@ describe('readAiPngStamp', () => {
     expect(readAiPngStamp(minimalPng())).toBeNull()
     expect(readAiPngStamp(new Uint8Array([1, 2, 3]))).toBeNull()
   })
+
+  it('honors an explicit produceId and generates fresh ids without one', () => {
+    const latched = stampAiGeneratedPng(minimalPng(), {
+      provider: 'glm',
+      produceId: 'doc-uuid-1',
+    })
+    const payload = JSON.parse(readAiPngStamp(latched)!) as Record<string, string>
+    expect(payload.ProduceID).toBe('doc-uuid-1')
+    expect(payload.ContentProducer).toBe('glm')
+
+    const first = JSON.parse(readAiPngStamp(stampAiGeneratedPng(minimalPng()))!) as Record<
+      string,
+      string
+    >
+    const second = JSON.parse(readAiPngStamp(stampAiGeneratedPng(minimalPng()))!) as Record<
+      string,
+      string
+    >
+    expect(first.ProduceID).not.toBe(second.ProduceID)
+  })
+
+  it('carries the explicit produceId into the JPEG XMP packet', () => {
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xd9])
+    const stamped = stampAiGeneratedJpeg(jpeg, { provider: 'glm', produceId: 'doc-uuid-2' })
+    const payload = new TextDecoder().decode(stamped)
+    expect(payload).toContain('"ProduceID":"doc-uuid-2"')
+  })
 })

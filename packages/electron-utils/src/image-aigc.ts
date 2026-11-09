@@ -12,6 +12,12 @@ import { aigcJsonFields, aigcXmpPacketFromJson } from './aigc-meta'
 export interface AiImageMeta {
   /** media provider id that produced the image ('glm', 'doubao', …) */
   readonly provider?: string
+  /**
+   * Document-derived exports pass the document latch's ProduceID so every
+   * artifact of one document shares it; generation-time stamps omit this
+   * and get a fresh per-generation UUID.
+   */
+  readonly produceId?: string
 }
 
 const PNG_SIGNATURE: readonly number[] = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
@@ -29,7 +35,7 @@ function crc32(bytes: Uint8Array, from: number, to: number): number {
 }
 
 function be32(a: number, b: number, c: number, d: number): number {
-  return (((a << 24) | (b << 16) | (c << 8) | d) >>> 0)
+  return ((a << 24) | (b << 16) | (c << 8) | d) >>> 0
 }
 
 /** iTXt: keyword \0 compressionFlag(0=none) compressionMethod(0) languageTag\0 translatedKeyword\0 text(UTF-8) */
@@ -69,21 +75,24 @@ function iTXtChunk(keyword: string, text: string): Uint8Array {
  * set: exactly Label / ContentProducer / ProduceID / ReservedCode1 /
  * ContentPropagator / PropagateID / ReservedCode2, JSON-encoded. Every
  * carrier (PNG iTXt, JPEG XMP, later OOXML/PDF) carries this same value
- * under the key "AIGC". ProduceID is a fresh UUID per generation; the
+ * under the key "AIGC". ProduceID is a fresh UUID per generation, or the
+ * document latch's id when the caller passes one (document-derived exports
+ * inherit it, so every artifact of one document shares the id); the
  * propagator fields stay empty at generation time.
  */
+
+/** Per-generation UUID unless the caller carries a document latch id. */
+function resolveProduceId(meta: AiImageMeta): string {
+  return meta.produceId ?? randomUUID()
+}
+
 function aigcPayload(meta: AiImageMeta): string {
-  // per-generation ProduceID: image stamps are one-shot, unlike the document
-  // latch which reuses one id across saves (see aigc-meta.ts)
-  return JSON.stringify(aigcJsonFields(meta.provider ?? '', randomUUID()))
+  return JSON.stringify(aigcJsonFields(meta.provider ?? '', resolveProduceId(meta)))
 }
 
 /** Stamp `bytes` with the AIGC provenance chunk; non-PNG input returns as-is. */
 export function stampAiGeneratedPng(bytes: Uint8Array, meta: AiImageMeta = {}): Uint8Array {
-  if (
-    bytes.length < 8 ||
-    !PNG_SIGNATURE.every((expected, i) => bytes[i] === expected)
-  ) {
+  if (bytes.length < 8 || !PNG_SIGNATURE.every((expected, i) => bytes[i] === expected)) {
     return bytes
   }
   // walk the chunk chain to IEND; a corrupt walk (length overrun) bails out
@@ -123,9 +132,8 @@ export function stampAiGeneratedPng(bytes: Uint8Array, meta: AiImageMeta = {}): 
 const XMP_NAMESPACE = 'http://ns.adobe.com/xap/1.0/\0'
 
 function xmpPacket(meta: AiImageMeta): string {
-  // per-generation ProduceID,同图片章字段集
   return aigcXmpPacketFromJson(
-    JSON.stringify(aigcJsonFields(meta.provider ?? '', randomUUID())),
+    JSON.stringify(aigcJsonFields(meta.provider ?? '', resolveProduceId(meta))),
   )
 }
 
@@ -153,7 +161,8 @@ export function stampAiGeneratedJpeg(bytes: Uint8Array, meta: AiImageMeta = {}):
  * XMP 也能识别;生成链路当前不产 WebP,此实现属前瞻兜底。
  */
 export function stampAiGeneratedWebp(bytes: Uint8Array, meta: AiImageMeta = {}): Uint8Array {
-  const riff = (i: number) => String.fromCharCode(bytes[i]!, bytes[i + 1]!, bytes[i + 2]!, bytes[i + 3]!)
+  const riff = (i: number) =>
+    String.fromCharCode(bytes[i]!, bytes[i + 1]!, bytes[i + 2]!, bytes[i + 3]!)
   if (bytes.length < 12 || riff(0) !== 'RIFF' || riff(8) !== 'WEBP') return bytes
   const data = new TextEncoder().encode(xmpPacket(meta))
   const chunk = new Uint8Array(8 + data.length) // FourCC(4) + sizeLE(4) + data(无 CRC、不补位)
@@ -198,10 +207,7 @@ export function stampAiGeneratedImage(bytes: Uint8Array, meta: AiImageMeta = {})
 
 /** Read back the stamped provenance (null when absent) — tests and tooling. */
 export function readAiPngStamp(bytes: Uint8Array): string | null {
-  if (
-    bytes.length < 8 ||
-    !PNG_SIGNATURE.every((expected, i) => bytes[i] === expected)
-  ) {
+  if (bytes.length < 8 || !PNG_SIGNATURE.every((expected, i) => bytes[i] === expected)) {
     return null
   }
   let offset = 8

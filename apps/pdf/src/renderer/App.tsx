@@ -5781,6 +5781,7 @@ export default function App() {
           images,
           pageNumbers,
           baseName: fileName.replace(/\.pdf$/i, ''),
+          ...(currentAigcMeta() ? { aigc: currentAigcMeta()! } : {}),
         })
         if (!result.ok) opFailed(result.error)
       } catch (err) {

@@ -862,6 +862,8 @@ export interface ExportImagesRequest {
   /** 1-based page numbers, same length as images, used for file names */
   pageNumbers: number[]
   baseName: string
+  /** the renderer's provenance latch — each page PNG gets the TC260 implicit marking when set */
+  aigc?: { provider: string; produceId: string }
 }
 
 export type ExportImagesResult =

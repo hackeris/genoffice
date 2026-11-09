@@ -1,12 +1,19 @@
 import type { ExportResult } from '../../shared/ipc'
 
-/** Same 192 DPI output as Docs; render and write one page at a time. */
+/** Same 192 DPI output as Docs; render and write one page at a time.
+ *  aigc: the renderer's provenance latch — page PNGs get the TC260 marking
+ *  when set (the temp PDF the pages come from is discarded). */
 export async function exportImages(
   html: string,
   suggestedName: string,
   onProgress: (count: number) => void,
+  aigc?: { provider: string; produceId: string },
 ): Promise<ExportResult & { count?: number }> {
-  const target = await window.markdownApi.prepareImageExport({ html, suggestedName })
+  const target = await window.markdownApi.prepareImageExport({
+    html,
+    suggestedName,
+    ...(aigc ? { aigc } : {}),
+  })
   if (!target.ok || 'canceled' in target) return target
   let task: import('pdfjs-dist').PDFDocumentLoadingTask | undefined
   let canvas: HTMLCanvasElement | undefined

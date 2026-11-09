@@ -73,6 +73,7 @@ import {
 // subpath rather than the barrel: keeps pdf-lib out of every other barrel consumer
 import { applyAiProvenanceToPdfDoc, stampAiGeneratedPdf } from '@genoffice/electron-utils/pdf-aigc'
 import { aigcMetaJson } from '@genoffice/electron-utils/aigc-meta'
+import { stampAiGeneratedPng } from '@genoffice/electron-utils/image-aigc'
 import { configureMetricsCache, familyVerticalMetrics } from '@genoffice/font-metrics'
 import { createI18n, getUiLang, normalizeLang, setUiLang } from '@genoffice/i18n'
 import { ProjectStore } from '@genoffice/project-store'
@@ -5392,7 +5393,13 @@ export function registerDocsIpc(): void {
 
   ipcMain.handle(
     'docs:write-export-image',
-    async (event, dir: string, fileName: string, pngBase64: string) => {
+    async (
+      event,
+      dir: string,
+      fileName: string,
+      pngBase64: string,
+      aigc?: { provider: string; produceId: string },
+    ) => {
       if (typeof dir !== 'string' || !imageExportDirs.get(event.sender.id)?.has(dir)) {
         return { ok: false, error: 'export target is not an authorized folder' }
       }
@@ -5403,9 +5410,19 @@ export function registerDocsIpc(): void {
       ) {
         return { ok: false, error: 'invalid image file name' }
       }
+      // the renderer's provenance latch: rasterized pages of an AI-mutated
+      // document carry the TC260 marking even though the temp PDF is dropped
+      const aigcMeta: { provider: string; produceId: string } | null =
+        typeof aigc?.provider === 'string' && typeof aigc?.produceId === 'string'
+          ? { provider: aigc.provider, produceId: aigc.produceId }
+          : null
       try {
         const filePath = join(dir, fileName)
-        await atomicWriteFile(filePath, Buffer.from(String(pngBase64), 'base64'))
+        const bytes = Buffer.from(String(pngBase64), 'base64')
+        const stamped = aigcMeta
+          ? Buffer.from(stampAiGeneratedPng(new Uint8Array(bytes), aigcMeta))
+          : bytes
+        await atomicWriteFile(filePath, stamped)
         return { ok: true, path: filePath }
       } catch (err) {
         return { ok: false, error: String(err) }

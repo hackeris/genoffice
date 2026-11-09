@@ -141,6 +141,7 @@ import {
 // barrel drags Electron-only modules into headless bundles.
 import { atomicWriteFile } from '@genoffice/electron-utils/atomic-write'
 import { aigcMetaJson, newAigcMeta } from '@genoffice/electron-utils/aigc-meta'
+import { stampAiGeneratedPng } from '@genoffice/electron-utils/image-aigc'
 import { DEFAULT_PICTURE_DPI, pictureFrame } from './picture-frame'
 import { refineComplexWidths, shapedMetricsReady } from './shaped-metrics'
 import { cfbKind, isCfbHeader } from './cfb-sniff'
@@ -594,6 +595,26 @@ function dropUntitledRecovery(wcId: number): void {
   const draft = untitledRecovery.get(wcId)
   if (draft) void rm(draft, { force: true }).catch(() => {})
   untitledRecovery.delete(wcId)
+}
+
+/**
+ * Deck latch → stamping meta for derived PNG exports (export-images,
+ * save-picture); null while unlatched (deck never AI-edited) or when the
+ * latch JSON is unusable — the artifact then ships unstamped rather than
+ * failing the export.
+ */
+function aiPngMetaFor(wcId: number): { provider: string; produceId: string } | null {
+  const provenance = sessions.get(wcId)?.aiProvenance
+  if (!provenance) return null
+  try {
+    const fields = JSON.parse(provenance) as { ContentProducer?: unknown; ProduceID?: unknown }
+    if (typeof fields.ContentProducer === 'string' && typeof fields.ProduceID === 'string') {
+      return { provider: fields.ContentProducer, produceId: fields.ProduceID }
+    }
+  } catch {
+    // unparsable latch JSON: treat as unlatched
+  }
+  return null
 }
 
 setInterval(() => {
@@ -4537,10 +4558,17 @@ export function registerSlidesIpc(): void {
       try {
         // Zero-padding width follows the total page count (3 digits for ≥100 pages)
         const pad = op.pngsBase64.length >= 100 ? 3 : 2
+        // same latch the pptx saves and the PDF export carry: deck-derived PNG
+        // artifacts inherit its ProduceID when the deck was AI-edited
+        const aigc = aiPngMetaFor(_e.sender.id)
         const paths: string[] = []
         for (let i = 0; i < op.pngsBase64.length; i++) {
           const p = join(op.dir, `${op.baseName}-${String(i + 1).padStart(pad, '0')}.png`)
-          await writeFile(p, Buffer.from(op.pngsBase64[i], 'base64'))
+          const raw = Buffer.from(op.pngsBase64[i], 'base64')
+          await writeFile(
+            p,
+            aigc ? Buffer.from(stampAiGeneratedPng(new Uint8Array(raw), aigc)) : raw,
+          )
           paths.push(p)
         }
         return { ok: true, paths }
@@ -4572,7 +4600,13 @@ export function registerSlidesIpc(): void {
       const r = await showSaveDialogWithMemory(dialog, dialogParent(), options, getDraftsDir())
       if (r.canceled || !r.filePath) return { ok: false }
       try {
-        await writeFile(r.filePath, Buffer.from(op.pngBase64, 'base64'))
+        // deck-derived artifact, same latch rule as slides:export-images
+        const aigc = aiPngMetaFor(_e.sender.id)
+        const raw = Buffer.from(op.pngBase64, 'base64')
+        await writeFile(
+          r.filePath,
+          aigc ? Buffer.from(stampAiGeneratedPng(new Uint8Array(raw), aigc)) : raw,
+        )
         return { ok: true, path: r.filePath }
       } catch (err) {
         return { ok: false, error: String(err) }

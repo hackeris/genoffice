@@ -688,6 +688,7 @@ export default function App() {
             buildPrintHtml(current.view.dom, suggestedName),
             suggestedName,
             (count) => setImageExportStatus({ key: 'appExportImagesProgress', params: { count } }),
+            currentAigcMeta() ?? undefined,
           )
           if (!result.ok) throw new Error(result.error)
           if ('canceled' in result) {

@@ -1153,10 +1153,17 @@ function registerMarkdownIpc(): void {
           configuredDefaultSaveDir(app),
         )
         if (picked.canceled || !picked.filePaths[0]) return { ok: true, canceled: true }
+        // the renderer's provenance latch: page PNGs get the TC260 marking
+        // when set (the temp PDF they are rasterized from is discarded)
+        const aigcMeta: { provider: string; produceId: string } | null =
+          typeof request.aigc?.provider === 'string' && typeof request.aigc?.produceId === 'string'
+            ? { provider: request.aigc.provider, produceId: request.aigc.produceId }
+            : null
         id = await imageExports.start(
           e.sender.id,
           picked.filePaths[0],
           String(request.suggestedName || tm('untitledFile')),
+          aigcMeta ?? undefined,
         )
         const pdf = await printMarkdownPdf(request.html)
         if (e.sender.isDestroyed()) throw new Error('Document closed during export')

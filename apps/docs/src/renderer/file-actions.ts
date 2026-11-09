@@ -1558,6 +1558,7 @@ export async function exportImages(ctx: FileActionContext): Promise<boolean> {
           target.dir,
           `${baseName}-${String(i).padStart(pad, '0')}.png`,
           btoa(b64),
+          currentAigcMeta() ?? undefined,
         )
         if (!r.ok) return fail(r.error ?? '')
       }

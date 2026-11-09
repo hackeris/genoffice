@@ -32,6 +32,7 @@ import { createI18n, getUiLang } from '@genoffice/i18n'
 import { generateImageTool, documentMediaRoots } from '@genoffice/ai-search'
 import { PDF_CHANNELS } from '../shared/ipc'
 import { printJobOptions } from '@genoffice/electron-utils/print-job'
+import { stampAiGeneratedPng } from '@genoffice/electron-utils/image-aigc'
 import { buildExportImagePaths, hasValidExportPageNumbers } from './export-images'
 import type {
   ExportImagesRequest,
@@ -1761,10 +1762,20 @@ function registerPdfIpc(): void {
       })
       const dir = picked.filePaths[0]
       if (picked.canceled || !dir) return { ok: true, canceled: true }
+      // the renderer's provenance latch: pages of an AI-mutated document carry
+      // the TC260 marking when the document is exported as images
+      const aigcMeta: { provider: string; produceId: string } | null =
+        typeof request.aigc?.provider === 'string' && typeof request.aigc?.produceId === 'string'
+          ? { provider: request.aigc.provider, produceId: request.aigc.produceId }
+          : null
       try {
         const outputPaths = buildExportImagePaths(dir, baseName, pageNumbers)
         for (const [i, b64] of images.entries()) {
-          await writeFile(outputPaths[i]!, Buffer.from(b64, 'base64'))
+          const bytes = Buffer.from(b64, 'base64')
+          const stamped = aigcMeta
+            ? Buffer.from(stampAiGeneratedPng(new Uint8Array(bytes), aigcMeta))
+            : bytes
+          await writeFile(outputPaths[i]!, stamped)
         }
         // Reveal the exported images so success is never silent
         shell.showItemInFolder(outputPaths[0]!)
