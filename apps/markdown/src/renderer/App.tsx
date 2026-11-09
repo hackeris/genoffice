@@ -16,6 +16,7 @@ import {
   pollUntilReady,
   runHeadlessRendererExport,
 } from '@genoffice/electron-utils/headless-export'
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
 import { EditorContent, useEditor } from '@tiptap/react'
 import { FindPanel, type FindFocusRequest, type FindPanelStrings } from '@genoffice/ui'
 import type { Editor } from '@tiptap/core'
@@ -1066,6 +1067,7 @@ export default function App() {
     current.view.focus()
   }, [])
   const askSendNow = useCallback((text: string): void => {
+    if (AI_DISABLED) return
     setAiOpen(true)
     setAiPreset((prev) => ({ text, nonce: (prev?.nonce ?? 0) + 1 }))
   }, [])
@@ -1166,8 +1168,12 @@ export default function App() {
         sourceMode={sourceMode}
         sourceHistory={sourceMode ? sourceHistory : undefined}
         aiOpen={aiOpen}
-        onToggleAi={() => setAiOpen((v) => !v)}
+        onToggleAi={() => {
+          if (AI_DISABLED) return
+          setAiOpen((v) => !v)
+        }}
         onAiPreset={(text) => {
+          if (AI_DISABLED) return
           setAiOpen(true)
           setAiPreset((prev) => ({ text, nonce: (prev?.nonce ?? 0) + 1 }))
         }}
@@ -1179,37 +1185,39 @@ export default function App() {
       />
       {status === 'loading' && <div className="center-note">{t('loading')}</div>}
       <div className="app-main" style={status === 'ready' ? undefined : { display: 'none' }}>
-        <div
-          className={`ai-dock${aiOpen ? '' : ' collapsed'}${
-            !aiSidebarEnabled && !aiOpen ? ' ai-dock-off' : ''
-          }`}
-        >
-          {!aiOpen && aiSidebarEnabled && (
-            <button
-              className="ai-rail"
-              data-tip={t('aiOpenAssistant')}
-              aria-label={t('aiOpenAssistant')}
-              onClick={() => setAiOpen(true)}
-            >
-              <AiMark size={22} />
-            </button>
-          )}
-          {/* mounted only after the file is loaded so chat history resolves against the real path */}
-          {status === 'ready' && (
-            <AiPanel
-              deps={aiDeps}
-              filePath={filePath}
-              preset={aiPreset}
-              onCollapse={() => setAiOpen(false)}
-              editQueue={editQueue}
-              onQueueEditInstruction={queueUpdate}
-              onQueueRemove={queueRemove}
-              onQueueClear={queueClear}
-              onQueueFocus={queueFocus}
-              onQueueConsume={queueConsume}
-            />
-          )}
-        </div>
+        {!AI_DISABLED && (
+          <div
+            className={`ai-dock${aiOpen ? '' : ' collapsed'}${
+              !aiSidebarEnabled && !aiOpen ? ' ai-dock-off' : ''
+            }`}
+          >
+            {!aiOpen && aiSidebarEnabled && (
+              <button
+                className="ai-rail"
+                data-tip={t('aiOpenAssistant')}
+                aria-label={t('aiOpenAssistant')}
+                onClick={() => setAiOpen(true)}
+              >
+                <AiMark size={22} />
+              </button>
+            )}
+            {/* mounted only after the file is loaded so chat history resolves against the real path */}
+            {status === 'ready' && (
+              <AiPanel
+                deps={aiDeps}
+                filePath={filePath}
+                preset={aiPreset}
+                onCollapse={() => setAiOpen(false)}
+                editQueue={editQueue}
+                onQueueEditInstruction={queueUpdate}
+                onQueueRemove={queueRemove}
+                onQueueClear={queueClear}
+                onQueueFocus={queueFocus}
+                onQueueConsume={queueConsume}
+              />
+            )}
+          </div>
+        )}
         {outlineOpen && !sourceMode && (
           <OutlinePane
             items={outlineItems}
@@ -1338,7 +1346,7 @@ export default function App() {
         />
       )}
       {!sourceMode && <TableMenu editor={editor} scrollRef={scrollRef} zoom={zoom} />}
-      {editor && !sourceMode && status === 'ready' && (
+      {editor && !AI_DISABLED && !sourceMode && status === 'ready' && (
         <AiAskPopover
           editor={editor}
           queueFull={editQueue.length >= EDIT_QUEUE_MAX}

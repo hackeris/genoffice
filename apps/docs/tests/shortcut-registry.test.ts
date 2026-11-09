@@ -13,6 +13,7 @@ import {
   type ShortcutDef,
 } from '../src/renderer/shortcuts'
 import { strings } from '../src/renderer/i18n/strings'
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
 
 // alternates are listed as "A / B"; the separator has to keep ⌘/ itself intact
 const chords = (def: ShortcutDef, isMac: boolean) => shortcutKeys(def, isMac).split(' / ')
@@ -56,7 +57,9 @@ describe('shortcut registry', () => {
     expect(win('page-break')).toBe('Ctrl+Enter')
     expect(win('nbsp')).toBe('Ctrl+Shift+Space')
     expect(win('style-h1')).toBe('Ctrl+Alt+1')
-    expect(win('proofread')).toBe('F7')
+    // the AI-gated build (see ai-gate) drops the proofread row along with F7
+    expect(byId.has('proofread')).toBe(!AI_DISABLED)
+    if (!AI_DISABLED) expect(win('proofread')).toBe('F7')
     // platform-specific keys come from the explicit override, not a rewrite
     expect(win('endnote')).toBe('Ctrl+Alt+D')
     expect(shortcutKeys(byId.get('endnote')!, true)).toBe('⌥⌘E')

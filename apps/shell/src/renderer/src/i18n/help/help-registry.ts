@@ -9,6 +9,7 @@
  */
 
 import { LANGS } from '@genoffice/i18n'
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
 import { topicTitle } from './help-titles'
 
 export type HelpGroupId = 'start' | 'apps' | 'ai' | 'manage'
@@ -17,12 +18,9 @@ export interface HelpGroup {
   id: HelpGroupId
 }
 
-export const HELP_GROUPS: HelpGroup[] = [
-  { id: 'start' },
-  { id: 'apps' },
-  { id: 'ai' },
-  { id: 'manage' },
-]
+export const HELP_GROUPS: HelpGroup[] = AI_DISABLED
+  ? [{ id: 'start' }, { id: 'apps' }, { id: 'manage' }]
+  : [{ id: 'start' }, { id: 'apps' }, { id: 'ai' }, { id: 'manage' }]
 
 export interface HelpTopicMeta {
   id: string
@@ -34,7 +32,7 @@ export interface HelpTopicMeta {
 }
 
 /** Authoritative topic list. Body files live in ./topics/<id>.<lang>.md */
-export const HELP_TOPICS: HelpTopicMeta[] = [
+const ALL_TOPICS: HelpTopicMeta[] = [
   {
     id: 'install',
     group: 'start',
@@ -308,6 +306,16 @@ export const HELP_TOPICS: HelpTopicMeta[] = [
     ],
   },
 ]
+
+// With AI gated off (see ai-gate), drop the AI panel/models and MCP topics;
+// the fonts manual moves to the "manage" group — its content has nothing to
+// do with AI and must not vanish along with the AI group.
+const AI_HIDDEN_TOPICS = new Set(['ai-panel', 'ai-models', 'mcp'])
+export const HELP_TOPICS: HelpTopicMeta[] = AI_DISABLED
+  ? ALL_TOPICS.filter((t) => !AI_HIDDEN_TOPICS.has(t.id)).map((t) =>
+      t.group === 'ai' ? { ...t, group: 'manage' as const } : t,
+    )
+  : ALL_TOPICS
 
 /**
  * Topic bodies per language, keyed `<id>.<lang>`; missing pairs fall back to en.

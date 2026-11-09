@@ -13,6 +13,7 @@ import React, {
 } from 'react'
 import type { AnimEffectKind, GradientFillSpec, TransitionKind } from '../../shared/ipc'
 import type { ChartStyleInfo } from '@genoffice/pptx-render'
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
 import {
   useDismissablePopover,
   useRibbonCollapse,
@@ -2500,61 +2501,65 @@ export function Ribbon({
           </>
         ) : tab === 'review' ? (
           <>
-            <Group label={t('ribbonGroupProofing')}>
-              <button
-                className="rb-big"
-                disabled={!hasDoc}
-                data-tip={`${t('ribbonSpellCheckTip')} — ${t('ribbonAiCreditNote')}`}
-                onClick={() => {
-                  if (confirmAiRewrite()) onAiPreset(t('ribbonSpellCheckPrompt'))
-                }}
-              >
-                <span className="rb-big-icon">
-                  <span className="ai-feature-icon" aria-hidden="true">
-                    <img src={iconSpelling} width={22} height={22} alt="" />
-                  </span>
-                </span>
-                <span>{t('ribbonSpellCheck')}</span>
-              </button>
-              <div className="rb-drop-wrap">
-                <button
-                  className={`rb-big ${translateOpen ? 'active' : ''}`}
-                  disabled={!hasDoc}
-                  data-tip={`${t('ribbonTranslateTip')} — ${t('ribbonAiCreditNote')}`}
-                  onMouseDown={(e) => {
-                    e.stopPropagation()
-                    closeSiblingPanels(e, closePanels, 'translate')
-                  }}
-                  onClick={() => setTranslateOpen((v) => !v)}
-                >
-                  <span className="rb-big-icon">
-                    <span className="ai-feature-icon" aria-hidden="true">
-                      <img src={iconTranslate} width={22} height={22} alt="" />
+            {!AI_DISABLED && (
+              <>
+                <Group label={t('ribbonGroupProofing')}>
+                  <button
+                    className="rb-big"
+                    disabled={!hasDoc}
+                    data-tip={`${t('ribbonSpellCheckTip')} — ${t('ribbonAiCreditNote')}`}
+                    onClick={() => {
+                      if (confirmAiRewrite()) onAiPreset(t('ribbonSpellCheckPrompt'))
+                    }}
+                  >
+                    <span className="rb-big-icon">
+                      <span className="ai-feature-icon" aria-hidden="true">
+                        <img src={iconSpelling} width={22} height={22} alt="" />
+                      </span>
                     </span>
-                    <RbCaret />
-                  </span>
-                  <span>{t('ribbonTranslate')}</span>
-                </button>
-                {translateOpen && (
-                  <div className="rb-drop rb-menu" onMouseDown={(e) => e.stopPropagation()}>
-                    {TRANSLATE_TARGETS.map((lang) => (
-                      <button
-                        key={lang}
-                        onClick={() => {
-                          setTranslateOpen(false)
-                          if (confirmAiRewrite()) {
-                            onAiPreset(t('ribbonTranslatePrompt', { lang: t(lang) }))
-                          }
-                        }}
-                      >
-                        {t(lang)}
-                      </button>
-                    ))}
+                    <span>{t('ribbonSpellCheck')}</span>
+                  </button>
+                  <div className="rb-drop-wrap">
+                    <button
+                      className={`rb-big ${translateOpen ? 'active' : ''}`}
+                      disabled={!hasDoc}
+                      data-tip={`${t('ribbonTranslateTip')} — ${t('ribbonAiCreditNote')}`}
+                      onMouseDown={(e) => {
+                        e.stopPropagation()
+                        closeSiblingPanels(e, closePanels, 'translate')
+                      }}
+                      onClick={() => setTranslateOpen((v) => !v)}
+                    >
+                      <span className="rb-big-icon">
+                        <span className="ai-feature-icon" aria-hidden="true">
+                          <img src={iconTranslate} width={22} height={22} alt="" />
+                        </span>
+                        <RbCaret />
+                      </span>
+                      <span>{t('ribbonTranslate')}</span>
+                    </button>
+                    {translateOpen && (
+                      <div className="rb-drop rb-menu" onMouseDown={(e) => e.stopPropagation()}>
+                        {TRANSLATE_TARGETS.map((lang) => (
+                          <button
+                            key={lang}
+                            onClick={() => {
+                              setTranslateOpen(false)
+                              if (confirmAiRewrite()) {
+                                onAiPreset(t('ribbonTranslatePrompt', { lang: t(lang) }))
+                              }
+                            }}
+                          >
+                            {t(lang)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </Group>
-            <div className="ribbon-sep" />
+                </Group>
+                <div className="ribbon-sep" />
+              </>
+            )}
             <Group label={t('ribbonGroupComments')}>
               <button
                 className="rb-big"

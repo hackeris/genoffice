@@ -8,6 +8,8 @@
  * stack. Renderers never inject one (their fetch already is Chromium's).
  */
 
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
+
 type FetchLike = (url: string, init?: RequestInit) => Promise<Response>
 
 let rescueFetch: FetchLike | null = null
@@ -55,6 +57,12 @@ function isBlockPage(response: Response): boolean {
 }
 
 export async function aiFetch(url: string, rawInit: RequestInit): Promise<Response> {
+  // Single choke point for every provider HTTP call (LLM streaming, chat,
+  // media generation, model catalog): the AI-gated build refuses here, which
+  // also covers the CLI and MCP paths that bypass the app UI (see ai-gate).
+  if (AI_DISABLED) {
+    throw new Error('AI features are disabled in this build (ai-gate)')
+  }
   const init = withUserAgent(rawInit)
   const signal = init.signal as AbortSignal | null | undefined
   let response: Response

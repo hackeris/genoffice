@@ -15,6 +15,7 @@ import {
   type WebSearchResult,
 } from './shared'
 import { parallelMcpSearch } from './parallel-mcp'
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
 
 export type { ImageSearchResult, WebSearchResult } from './shared'
 export { setAiProxyUrl, aiProxyUrl } from './shared'
@@ -47,15 +48,7 @@ export interface SearchOptions {
   customUrl?: string
   customKey?: string
   /** which backend to try first (default serper) */
-  prefer?:
-    | 'bocha'
-    | 'serper'
-    | 'serply'
-    | 'tavily'
-    | 'parallel'
-    | 'exa'
-    | 'firecrawl'
-    | 'custom'
+  prefer?: 'bocha' | 'serper' | 'serply' | 'tavily' | 'parallel' | 'exa' | 'firecrawl' | 'custom'
 }
 
 const SEARCH_BACKENDS = new Set([
@@ -499,9 +492,9 @@ export async function webSearch(
   if (customFirst) return customFirst
   const order = [
     o.prefer,
-    ...(
-      ['bocha', 'serper', 'serply', 'tavily', 'parallel', 'exa', 'firecrawl'] as const
-    ).filter((id) => id !== o.prefer),
+    ...(['bocha', 'serper', 'serply', 'tavily', 'parallel', 'exa', 'firecrawl'] as const).filter(
+      (id) => id !== o.prefer,
+    ),
   ]
   for (const id of order) {
     const r = await keyed[id]()
@@ -733,6 +726,7 @@ async function fetchWithTimeout<T>(
   init: RequestInit & { timeoutMs?: number },
   consume: (response: Response) => Promise<T>,
 ): Promise<T> {
+  if (AI_DISABLED) throw new Error('web search is disabled in this build (ai-gate)')
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), init.timeoutMs ?? 15000)
   try {

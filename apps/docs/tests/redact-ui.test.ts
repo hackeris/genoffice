@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
+// the menu's AI entries ship gated off (see ai-gate); the withholding item's
+// placement is asserted relative to them, so lift the gate here
+vi.mock('@genoffice/electron-utils/ai-gate', () => ({ AI_DISABLED: false }))
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createElement, useState } from 'react'

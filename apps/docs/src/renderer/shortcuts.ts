@@ -12,6 +12,7 @@
  * Hide / Minimize / Quit, and Word itself differs on a few chords).
  */
 import { macShortcutsToWin, platformShortcuts } from '@genoffice/i18n'
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
 import type { StringKey } from './i18n/locale'
 
 export type ShortcutGroupId = 'file' | 'edit' | 'text' | 'para' | 'insert' | 'review' | 'view'
@@ -39,7 +40,7 @@ export const SHORTCUT_GROUPS: readonly { id: ShortcutGroupId; labelKey: StringKe
   { id: 'view', labelKey: 'appScGroupView' },
 ]
 
-export const SHORTCUTS: readonly ShortcutDef[] = [
+const ALL_SHORTCUTS: readonly ShortcutDef[] = [
   // ---- File ----
   { id: 'new', group: 'file', labelKey: 'appNew', keys: '⌘N' },
   { id: 'new-window', group: 'file', labelKey: 'appScNewWindow', keys: '⇧⌘N' },
@@ -184,6 +185,11 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
     win: 'Ctrl+Shift+8',
   },
 ]
+
+// gated-off AI (see ai-gate): F7 runs the AI proofread, so the row drops out
+export const SHORTCUTS: readonly ShortcutDef[] = AI_DISABLED
+  ? ALL_SHORTCUTS.filter((def) => def.id !== 'proofread')
+  : ALL_SHORTCUTS
 
 /** platformShortcuts is the identity on macOS and rewrites the notation elsewhere */
 const IS_MAC = platformShortcuts('⌘') === '⌘'

@@ -18,6 +18,7 @@ import type {
   FileSearchRerank,
 } from '../../shared/home-api'
 import { useDismissablePopover } from '@genoffice/ui'
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
 import { fileCountLabel, visiblePageCount } from './counts'
 import { useI18n } from './locale'
 import type { I18n, StringKey } from './locale'
@@ -853,7 +854,6 @@ function SettingsEntry({
     </div>
   )
 }
-
 
 // ── Drop-to-open overlay ────────────────────────────────
 
@@ -2599,7 +2599,7 @@ export function Home() {
             )}
             <div className="file-search-group">
               {renderSearchBox()}
-              {renderSearchSettingsButton()}
+              {!AI_DISABLED && renderSearchSettingsButton()}
             </div>
             {searchActive ? (
               renderSearchHeading()
@@ -2661,137 +2661,140 @@ export function Home() {
 
         {/* 鸿蒙沙箱下最近/收藏路径易失效，最近文件区块先整体隐藏；代码保留，恢复时去掉本包裹即可 */}
         {false && (
-        <section
-          className="recents"
-          aria-label={view === 'recent' ? t('secRecent') : t('secStarred')}
-        >
-          <div className="recents-toolbar">
-            {selectedPaths.length > 0 ? (
-              <div className="selection-bar">
-                <span className="selection-count">
-                  {t('selectedCount', { n: selectedPaths.length })}
-                </span>
-                {canMove && (
-                  <button className="selection-action" onClick={() => startMove(selectedPaths)}>
-                    {t('moveToFolder')}
-                  </button>
-                )}
-                {view === 'starred' ? (
-                  // every Starred-view row is a favorite, so the selection
-                  // action unstars; removeRecent there kept the stars and the
-                  // rows came straight back on refresh
+          <section
+            className="recents"
+            aria-label={view === 'recent' ? t('secRecent') : t('secStarred')}
+          >
+            <div className="recents-toolbar">
+              {selectedPaths.length > 0 ? (
+                <div className="selection-bar">
+                  <span className="selection-count">
+                    {t('selectedCount', { n: selectedPaths.length })}
+                  </span>
+                  {canMove && (
+                    <button className="selection-action" onClick={() => startMove(selectedPaths)}>
+                      {t('moveToFolder')}
+                    </button>
+                  )}
+                  {view === 'starred' ? (
+                    // every Starred-view row is a favorite, so the selection
+                    // action unstars; removeRecent there kept the stars and the
+                    // rows came straight back on refresh
+                    <button
+                      className="selection-action"
+                      onClick={() => unstarSelected(selectedPaths)}
+                    >
+                      {t('unstar')}
+                    </button>
+                  ) : (
+                    <button
+                      className="selection-action"
+                      onClick={() => removeRecent(selectedPaths)}
+                    >
+                      {t('removeFromList')}
+                    </button>
+                  )}
                   <button
-                    className="selection-action"
-                    onClick={() => unstarSelected(selectedPaths)}
+                    className="selection-action danger"
+                    onClick={() => deleteFiles(selectedPaths)}
                   >
-                    {t('unstar')}
+                    {t('deleteFiles')}
                   </button>
-                ) : (
-                  <button className="selection-action" onClick={() => removeRecent(selectedPaths)}>
-                    {t('removeFromList')}
+                  <button className="selection-action" onClick={() => setSelected(new Set())}>
+                    {t('cancel')}
                   </button>
-                )}
-                <button
-                  className="selection-action danger"
-                  onClick={() => deleteFiles(selectedPaths)}
-                >
-                  {t('deleteFiles')}
-                </button>
-                <button className="selection-action" onClick={() => setSelected(new Set())}>
-                  {t('cancel')}
-                </button>
-              </div>
-            ) : (
-              <div className="toolbar-filters">
-                <div className="filter-pills" role="tablist" aria-label={t('filterAria')}>
-                  {FILTERS.map((f) => (
-                    <button
-                      key={f.key}
-                      className={`filter-pill${filter === f.key ? ' active' : ''}`}
-                      onClick={() => changeFilter(f.key)}
-                    >
-                      {t(f.label)}
-                    </button>
-                  ))}
                 </div>
-                {view === 'starred' && starredGroups.length > 0 && (
-                  // the group pills refine the Starred view further; the type
-                  // pills above them keep working on the group-scoped list
-                  <div className="filter-pills" role="tablist" aria-label={t('groupFilterAria')}>
-                    <button
-                      className={`filter-pill${groupFilter === null ? ' active' : ''}`}
-                      onClick={() => changeGroupFilter(null)}
-                    >
-                      {t('filterAll')}
-                    </button>
-                    {starredGroups.map((g) => (
+              ) : (
+                <div className="toolbar-filters">
+                  <div className="filter-pills" role="tablist" aria-label={t('filterAria')}>
+                    {FILTERS.map((f) => (
                       <button
-                        key={g}
-                        className={`filter-pill${groupFilter === g ? ' active' : ''}`}
-                        onClick={() => changeGroupFilter(g)}
+                        key={f.key}
+                        className={`filter-pill${filter === f.key ? ' active' : ''}`}
+                        onClick={() => changeFilter(f.key)}
                       >
-                        {g}
+                        {t(f.label)}
                       </button>
                     ))}
+                  </div>
+                  {view === 'starred' && starredGroups.length > 0 && (
+                    // the group pills refine the Starred view further; the type
+                    // pills above them keep working on the group-scoped list
+                    <div className="filter-pills" role="tablist" aria-label={t('groupFilterAria')}>
+                      <button
+                        className={`filter-pill${groupFilter === null ? ' active' : ''}`}
+                        onClick={() => changeGroupFilter(null)}
+                      >
+                        {t('filterAll')}
+                      </button>
+                      {starredGroups.map((g) => (
+                        <button
+                          key={g}
+                          className={`filter-pill${groupFilter === g ? ' active' : ''}`}
+                          onClick={() => changeGroupFilter(g)}
+                        >
+                          {g}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="recents-heading">
+                <span className="file-count">{fileCountLabel(listTotal, lang, t)}</span>
+              </div>
+              {searchActive ? (
+                renderSearchHeading()
+              ) : (
+                <div className="recents-heading">
+                  <span className="section-label">
+                    {view === 'recent' ? t('secRecent') : t('secStarred')}
+                  </span>
+                  <span className="file-count">{fileCountLabel(listTotal, lang, t)}</span>
+                </div>
+              )}
+            </div>
+
+            {searchActive ? (
+              renderSearchResults()
+            ) : entries.length === 0 ? (
+              renderEmpty(
+                view === 'starred'
+                  ? t('emptyStarred')
+                  : navCounts.recent === 0
+                    ? t('emptyRecent')
+                    : t('emptyFiltered'),
+              )
+            ) : (
+              <div className={`recent-table${selectedPaths.length > 0 ? ' has-selection' : ''}`}>
+                <div className="recent-columns">
+                  <span className="col-check">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleSelectAll}
+                      aria-label={t('selectAll')}
+                    />
+                  </span>
+                  <span className="col-name">{t('colName')}</span>
+                  <span className="col-path">{t('colLocation')}</span>
+                  {renderModifiedHeader()}
+                  <span className="col-size">{t('colSize')}</span>
+                  <span />
+                </div>
+                <ul className="recent-list">
+                  {(fileSort === 'oldest' ? [...entries].reverse() : entries).map((entry) =>
+                    renderFileRow(entry, 'global'),
+                  )}
+                </ul>
+                {hasMore && (
+                  <div ref={sentinelRef} className="load-more" aria-hidden="true">
+                    <span className="load-more-spinner" />
                   </div>
                 )}
               </div>
             )}
-            <div className="recents-heading">
-              <span className="file-count">{fileCountLabel(listTotal, lang, t)}</span>
-            </div>
-            {searchActive ? (
-              renderSearchHeading()
-            ) : (
-              <div className="recents-heading">
-                <span className="section-label">
-                  {view === 'recent' ? t('secRecent') : t('secStarred')}
-                </span>
-                <span className="file-count">{fileCountLabel(listTotal, lang, t)}</span>
-              </div>
-            )}
-          </div>
-
-          {searchActive ? (
-            renderSearchResults()
-          ) : entries.length === 0 ? (
-            renderEmpty(
-              view === 'starred'
-                ? t('emptyStarred')
-                : navCounts.recent === 0
-                  ? t('emptyRecent')
-                  : t('emptyFiltered'),
-            )
-          ) : (
-            <div className={`recent-table${selectedPaths.length > 0 ? ' has-selection' : ''}`}>
-              <div className="recent-columns">
-                <span className="col-check">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleSelectAll}
-                    aria-label={t('selectAll')}
-                  />
-                </span>
-                <span className="col-name">{t('colName')}</span>
-                <span className="col-path">{t('colLocation')}</span>
-                {renderModifiedHeader()}
-                <span className="col-size">{t('colSize')}</span>
-                <span />
-              </div>
-              <ul className="recent-list">
-                {(fileSort === 'oldest' ? [...entries].reverse() : entries).map((entry) =>
-                  renderFileRow(entry, 'global'),
-                )}
-              </ul>
-              {hasMore && (
-                <div ref={sentinelRef} className="load-more" aria-hidden="true">
-                  <span className="load-more-spinner" />
-                </div>
-              )}
-            </div>
-          )}
-        </section>
+          </section>
         )}
       </main>
     )

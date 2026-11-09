@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { Editor } from '@tiptap/core'
 import { useEditorState } from '@tiptap/react'
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
 import {
   Dropdown,
   RibbonCollapseButton,
@@ -441,43 +442,47 @@ export function Ribbon({
       </div>
 
       <div className="ribbon-body" data-ribbon-body="">
-        <div className="ribbon-group">
-          <div className="ribbon-group-items">
-            <button
-              type="button"
-              className={`rb-big ai-entry${aiOpen ? ' active' : ''}`}
-              data-tip={t('aiOpenAssistant')}
-              disabled={disabled}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={onToggleAi}
-            >
-              <span className="rb-big-icon">
-                <AiMark size={26} />
-              </span>
-              <span>AI</span>
-            </button>
-            {aiPresets.map(({ kind, btn, prompt }) => (
-              <button
-                key={kind}
-                type="button"
-                className="rb-big ai-entry"
-                data-tip={t(btn)}
-                disabled={off || state?.empty}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => onAiPreset(prompt())}
-              >
-                <span className="rb-big-icon">
-                  <span className="ai-feature-icon" aria-hidden="true">
-                    <AiFeatureIcon kind={kind} />
+        {!AI_DISABLED && (
+          <>
+            <div className="ribbon-group">
+              <div className="ribbon-group-items">
+                <button
+                  type="button"
+                  className={`rb-big ai-entry${aiOpen ? ' active' : ''}`}
+                  data-tip={t('aiOpenAssistant')}
+                  disabled={disabled}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={onToggleAi}
+                >
+                  <span className="rb-big-icon">
+                    <AiMark size={26} />
                   </span>
-                </span>
-                <span>{t(btn)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+                  <span>AI</span>
+                </button>
+                {aiPresets.map(({ kind, btn, prompt }) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    className="rb-big ai-entry"
+                    data-tip={t(btn)}
+                    disabled={off || state?.empty}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => onAiPreset(prompt())}
+                  >
+                    <span className="rb-big-icon">
+                      <span className="ai-feature-icon" aria-hidden="true">
+                        <AiFeatureIcon kind={kind} />
+                      </span>
+                    </span>
+                    <span>{t(btn)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        <div className="rb-sep" />
+            <div className="rb-sep" />
+          </>
+        )}
 
         {!sourceMode && (
           <div className="ribbon-group">

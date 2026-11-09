@@ -15,6 +15,7 @@ import {
   pollUntilReady,
   runHeadlessRendererExport,
 } from '@genoffice/electron-utils/headless-export'
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
 import { useI18n } from './i18n/locale'
 import { parseDocText, serializeDocText, type Envelope } from './document/envelope'
 import {
@@ -802,7 +803,7 @@ export default function App() {
             moveSelectedRef.current(msg.command === 'moveUp' ? -1 : 1)
           else if (msg.command === 'delete') runManual([{ op: 'remove', sid }], 'clear')
           else if (msg.command === 'escape') selectSid(null)
-          else if (msg.command === 'askAi') setAskMode({ kind: 'new' })
+          else if (msg.command === 'askAi' && !AI_DISABLED) setAskMode({ kind: 'new' })
           else if (msg.command === 'bold') wrapSelectionRef.current('strong')
           else if (msg.command === 'italic') wrapSelectionRef.current('em')
           else if (msg.command === 'parent' && e.parentSid !== null) {
@@ -873,6 +874,7 @@ export default function App() {
   }
   wrapSelectionRef.current = wrapSelection
   const askAi = () => {
+    if (AI_DISABLED) return
     if (selectedEntry) setAskMode({ kind: 'new' })
   }
   const setAttr = (name: string, value: string | null) => {
@@ -1607,12 +1609,16 @@ export default function App() {
         view={view}
         onView={setView}
         aiOpen={aiOpen}
-        onToggleAi={() => setAiOpen((v) => !v)}
+        onToggleAi={() => {
+          if (AI_DISABLED) return
+          setAiOpen((v) => !v)
+        }}
         canInsert={canvasMode === 'edit'}
         onInsert={(kind, opts) => void insertElement(kind, opts)}
         onInsertSkeleton={insertSkeleton}
         canInsertSkeleton={canvasMode === 'edit' && isDocEmpty(textRef.current)}
         onAiPreset={(text) => {
+          if (AI_DISABLED) return
           flushPending()
           setAiOpen(true)
           setAiPreset({ text, nonce: Date.now() })
@@ -1622,35 +1628,37 @@ export default function App() {
       />
 
       <div className="app-main">
-        <div
-          className={`ai-dock${aiOpen ? '' : ' collapsed'}${
-            !aiSidebarEnabled && !aiOpen ? ' ai-dock-off' : ''
-          }`}
-        >
-          {!aiOpen && aiSidebarEnabled && (
-            <button
-              className="ai-rail"
-              data-tip={t('aiOpenAssistant')}
-              aria-label={t('aiOpenAssistant')}
-              onClick={() => setAiOpen(true)}
-            >
-              <AiMark size={18} />
-            </button>
-          )}
-          {/* stays mounted while collapsed: an in-flight run, its snapshots and the loop context survive */}
-          <AiPanel
-            deps={aiDeps}
-            filePath={path}
-            preset={aiPreset}
-            editQueue={editQueue}
-            onQueueEditInstruction={queueUpdate}
-            onQueueRemove={queueRemove}
-            onQueueClear={() => setEditQueue([])}
-            onQueueFocus={queueFocus}
-            onQueueConsume={queueConsume}
-            onCollapse={() => setAiOpen(false)}
-          />
-        </div>
+        {!AI_DISABLED && (
+          <div
+            className={`ai-dock${aiOpen ? '' : ' collapsed'}${
+              !aiSidebarEnabled && !aiOpen ? ' ai-dock-off' : ''
+            }`}
+          >
+            {!aiOpen && aiSidebarEnabled && (
+              <button
+                className="ai-rail"
+                data-tip={t('aiOpenAssistant')}
+                aria-label={t('aiOpenAssistant')}
+                onClick={() => setAiOpen(true)}
+              >
+                <AiMark size={18} />
+              </button>
+            )}
+            {/* stays mounted while collapsed: an in-flight run, its snapshots and the loop context survive */}
+            <AiPanel
+              deps={aiDeps}
+              filePath={path}
+              preset={aiPreset}
+              editQueue={editQueue}
+              onQueueEditInstruction={queueUpdate}
+              onQueueRemove={queueRemove}
+              onQueueClear={() => setEditQueue([])}
+              onQueueFocus={queueFocus}
+              onQueueConsume={queueConsume}
+              onCollapse={() => setAiOpen(false)}
+            />
+          </div>
+        )}
         <div className="app-content">
           {findTarget && (
             <FindPanel
@@ -1839,7 +1847,7 @@ export default function App() {
           </footer>
         </div>
       </div>
-      {askTarget && askMode && canvasMode !== 'present' && (
+      {askTarget && askMode && !AI_DISABLED && canvasMode !== 'present' && (
         <AiAskPopover
           key={askMode.kind === 'edit' ? askMode.qid : 'new'}
           target={askTarget}

@@ -25,6 +25,7 @@ import {
   useAutoSavePref,
   useAiSidebarEnabled,
 } from '@genoffice/ui'
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
 import { wordRangeAtCaret } from './editor/comments'
 import { setFieldInstr, toggleAllFieldCodes, type FieldRange } from './editor/field-codes'
 import { linkTarget } from './editor/link-actions'
@@ -5318,6 +5319,7 @@ export function App() {
   // Review > Editor, the Tools menu and Word's F7 all run the same AI proofread
   // behind the one-time whole-document-rewrite acknowledgement
   const runAiProofread = useCallback(() => {
+    if (AI_DISABLED) return
     if (
       localStorage.getItem(AI_REWRITE_ACK_KEY) !== '1' &&
       !window.confirm(t('ribbonAiRewriteConfirm'))
@@ -5715,7 +5717,7 @@ export function App() {
           zoomFit('multi')
           break
         case 'toggle-ai':
-          setShowAi((v) => !v)
+          if (!AI_DISABLED) setShowAi((v) => !v)
           break
         case 'toggle-dark':
           updateDarkPage(!darkPageRef.current)
@@ -6317,6 +6319,7 @@ export function App() {
     editor.view.focus()
   }
   const askSendNow = (text: string): void => {
+    if (AI_DISABLED) return
     setShowAi(true)
     setAiPreset({ text, nonce: Date.now(), autoRun: true })
   }
@@ -6726,7 +6729,10 @@ export function App() {
       else if (format === 'md') void exportMarkdown()
       else exportImages()
     },
-    onToggleAi: () => setShowAi((v) => !v),
+    onToggleAi: () => {
+      if (AI_DISABLED) return
+      setShowAi((v) => !v)
+    },
     onSection: (next: SectionSettings) => {
       // layout applies to the cursor's section; the final section's sectPr goes through SaveOptions.section (also drives canvas geometry)
       setSections((prev) =>
@@ -6801,6 +6807,7 @@ export function App() {
     onZoomDialog: () => setShowZoomDialog(true),
     onDarkPage: updateDarkPage,
     onAiPreset: (text: string) => {
+      if (AI_DISABLED) return
       // Word's Editor / Translate start working as soon as they're clicked
       setShowAi(true)
       setAiPreset({ text, nonce: Date.now(), autoRun: true })
@@ -7375,7 +7382,7 @@ export function App() {
       />
 
       <div className="app-main">
-        {doc && (
+        {doc && !AI_DISABLED && (
           <div
             className={`ai-dock${showAi ? '' : ' collapsed'}${
               !aiSidebarEnabled && !showAi ? ' ai-dock-off' : ''
@@ -7438,7 +7445,7 @@ export function App() {
                 onClose={closeNav}
               />
             )}
-            {doc && (
+            {doc && !AI_DISABLED && (
               <AiAskPopover
                 editor={editor}
                 queueFull={editQueue.length >= EDIT_QUEUE_MAX}
@@ -7924,6 +7931,7 @@ export function App() {
           onViewImage={setViewImage}
           onSaveImageAs={saveImageAs}
           onAiPreset={(text) => {
+            if (AI_DISABLED) return
             setShowAi(true)
             setAiPreset({ text, nonce: Date.now(), autoRun: true })
           }}

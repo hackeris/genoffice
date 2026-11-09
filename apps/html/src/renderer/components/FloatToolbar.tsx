@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { Ref } from 'react'
 import { useDismissablePopover } from '@genoffice/ui'
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
 import { useI18n } from '../i18n/locale'
 import type { ComputedSnapshot } from '../preview/inspector-protocol'
 import { ColorPop } from './ColorField'
@@ -369,7 +370,7 @@ export function FloatToolbar(p: Props) {
       >
         <IconSliders size={16} />
       </button>
-      {p.canAskAi && (
+      {p.canAskAi && !AI_DISABLED && (
         <>
           <span className="hx-float-sep" />
           <button

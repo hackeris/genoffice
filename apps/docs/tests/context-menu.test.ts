@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
+// the menu's AI entries ship gated off (see ai-gate); these tests describe the
+// AI-enabled menu, so lift the gate for the suite
+vi.mock('@genoffice/electron-utils/ai-gate', () => ({ AI_DISABLED: false }))
 import { createElement } from 'react'
 import { createRoot } from 'react-dom/client'
 import { act } from 'react'

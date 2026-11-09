@@ -11,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       // Subpath before the bare name: string aliases are prefix replacements
+      '@genoffice/electron-utils/ai-gate': resolve(here, '../electron-utils/src/ai-gate.ts'),
       '@genoffice/electron-utils/remote-image': resolve(
         here,
         '../electron-utils/src/remote-image.ts',
@@ -27,5 +28,5 @@ export default defineConfig({
       '@genoffice/ai-provider': resolve(here, '../ai-provider/src/index.ts'),
     },
   },
-  test: { include: ['tests/**/*.test.ts'] },
+  test: { include: ['tests/**/*.test.ts'], setupFiles: ['tests/setup-ai-gate.ts'] },
 })

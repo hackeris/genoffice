@@ -73,6 +73,7 @@ import {
 // subpath rather than the barrel: keeps pdf-lib out of every other barrel consumer
 import { applyAiProvenanceToPdfDoc, stampAiGeneratedPdf } from '@genoffice/electron-utils/pdf-aigc'
 import { aigcMetaJson } from '@genoffice/electron-utils/aigc-meta'
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
 import { stampAiGeneratedPng } from '@genoffice/electron-utils/image-aigc'
 import { configureMetricsCache, familyVerticalMetrics } from '@genoffice/font-metrics'
 import { createI18n, getUiLang, normalizeLang, setUiLang } from '@genoffice/i18n'
@@ -5917,13 +5918,17 @@ export function buildDocsMenu(): void {
           ],
         },
         { type: 'separator' },
-        {
-          id: 'docs-menu-ai-sidebar',
-          type: 'checkbox',
-          checked: activeViewMenuState().aiSidebar,
-          label: tm('menuAiSidebar'),
-          click: () => sendCommand('toggle-ai'),
-        },
+        ...(AI_DISABLED
+          ? []
+          : [
+              {
+                id: 'docs-menu-ai-sidebar',
+                type: 'checkbox' as const,
+                checked: activeViewMenuState().aiSidebar,
+                label: tm('menuAiSidebar'),
+                click: () => sendCommand('toggle-ai'),
+              },
+            ]),
         {
           id: 'docs-menu-dark-mode',
           type: 'checkbox',
@@ -6079,7 +6084,9 @@ export function buildDocsMenu(): void {
           : [{ label: tm('menuPreferences'), click: () => sendCommand('preferences') }]),
         { type: 'separator' },
         // Runs the same AI proofread as Review > Editor (renderer shows the one-time ack)
-        { label: tm('menuAiProofread'), click: () => sendCommand('ai-proofread') },
+        ...(AI_DISABLED
+          ? []
+          : [{ label: tm('menuAiProofread'), click: () => sendCommand('ai-proofread') }]),
       ],
     },
     windowMenuTemplate(process.platform, appMenuLabels(getUiLang())),

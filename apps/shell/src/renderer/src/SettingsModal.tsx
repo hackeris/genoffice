@@ -25,6 +25,7 @@ import {
   upsertCustomEndpoint,
   AI_CUSTOM_PROTOCOLS,
 } from '@genoffice/ai-provider/browser'
+import { AI_DISABLED } from '@genoffice/electron-utils/ai-gate'
 import type {
   AiCustomCompat,
   AiCustomEndpoint,
@@ -39,12 +40,7 @@ import type {
 } from '@genoffice/ai-provider'
 import { useI18n } from './locale'
 import type { StringKey, TFunc } from './locale'
-import type {
-  AiCatalogEntry,
-  AuthorNameSetting,
-  DocTheme,
-  UiTheme,
-} from '../../shared/home-api'
+import type { AiCatalogEntry, AuthorNameSetting, DocTheme, UiTheme } from '../../shared/home-api'
 import { ProviderLogo } from './provider-logos'
 import './settings.css'
 
@@ -161,12 +157,16 @@ function CustomFontSizeInput({
   )
 }
 
-const SECTIONS: readonly { id: SectionId; labelKey: StringKey }[] = [
+const ALL_SECTIONS: readonly { id: SectionId; labelKey: StringKey }[] = [
   { id: 'aiModel', labelKey: 'setSecAiModel' },
   { id: 'aiMedia', labelKey: 'setSecAiMedia' },
   { id: 'general', labelKey: 'setSecGeneral' },
   { id: 'about', labelKey: 'setSecAbout' },
 ]
+// gated-off AI (see ai-gate): keep only the general and about sections
+const SECTIONS = AI_DISABLED
+  ? ALL_SECTIONS.filter((s) => s.id === 'general' || s.id === 'about')
+  : ALL_SECTIONS
 
 function SectionIcon({ id }: { id: SectionId }) {
   if (id === 'aiModel') {
@@ -325,7 +325,8 @@ function AiModelPane({ t }: { t: TFunc }) {
         baseUrl: cfg.baseUrl ?? '',
       })
       if (!live.ok) {
-        if (live.status === 401 || live.status === 403) setModelSync({ kind: 'rejected', code: live.status })
+        if (live.status === 401 || live.status === 403)
+          setModelSync({ kind: 'rejected', code: live.status })
         else if (live.status !== 404 && live.status !== 405) setModelSync({ kind: 'error' })
         // 404/405: the vendor serves no list endpoint — the static table stays the catalog
         return
@@ -1784,9 +1785,14 @@ export function SettingsModal({
   onOpenNotices,
 }: SettingsModalProps) {
   const { lang, setLang, t } = useI18n()
-  const [section, setSection] = useState<SectionId>(initialSection ?? 'aiModel')
+  const [section, setSection] = useState<SectionId>(
+    initialSection ?? (AI_DISABLED ? 'general' : 'aiModel'),
+  )
   useEffect(() => {
-    if (target) setSection(target.section)
+    if (!target) return
+    // a target naming a gated-off section (see ai-gate) must not land on a blank pane
+    if (AI_DISABLED && (target.section === 'aiModel' || target.section === 'aiMedia')) return
+    setSection(target.section)
   }, [target])
   const [theme, setTheme] = useState<UiTheme>('system')
   const [docTheme, setDocTheme] = useState<DocTheme>('follow')
@@ -1944,8 +1950,8 @@ export function SettingsModal({
             ))}
           </nav>
           <div className="set-pane">
-            {section === 'aiModel' && <AiModelPane t={t} />}
-            {section === 'aiMedia' && (
+            {!AI_DISABLED && section === 'aiModel' && <AiModelPane t={t} />}
+            {!AI_DISABLED && section === 'aiMedia' && (
               <AiMediaPane
                 t={t}
                 onFileSearchChange={onFileSearchChange}
@@ -1997,51 +2003,55 @@ export function SettingsModal({
                     onPick={(v) => applyDocumentTheme(v as DocTheme)}
                   />
                 </div>
-                <div className="set-field">
-                  <div className="set-field-text">
-                    <label className="set-field-label">{t('setAiPanelSide')}</label>
-                  </div>
-                  <Dropdown
-                    className="set-dd"
-                    value={aiPrefs.side}
-                    ariaLabel={t('setAiPanelSide')}
-                    options={[
-                      { value: 'left', label: t('aiPanelSideLeft') },
-                      { value: 'right', label: t('aiPanelSideRight') },
-                    ]}
-                    onPick={(side) => updateAiPrefs({ side: side as AiPanelSide })}
-                  />
-                </div>
-                <div className="set-field">
-                  <div className="set-field-text">
-                    <label className="set-field-label">{t('setAiFontSize')}</label>
-                  </div>
-                  {aiPrefs.fontSize === 'custom' && (
-                    <CustomFontSizeInput
-                      value={aiPrefs.customFontSize}
-                      label={t('aiFontSizeCustom')}
-                      onCommit={(px) => updateAiPrefs({ customFontSize: px })}
-                    />
-                  )}
-                  <Dropdown
-                    className="set-dd"
-                    value={aiPrefs.fontSize}
-                    ariaLabel={t('setAiFontSize')}
-                    options={AI_FONT_SIZE_OPTIONS.map((opt) => ({
-                      value: opt.value,
-                      label: t(opt.labelKey),
-                    }))}
-                    onPick={(v) => {
-                      const fontSize = v as AiFontSize
-                      // start the custom size from the preset being left so nothing jumps
-                      updateAiPrefs(
-                        fontSize === 'custom' && aiPrefs.fontSize !== 'custom'
-                          ? { fontSize, customFontSize: aiPanelFontPx(aiPrefs) }
-                          : { fontSize },
-                      )
-                    }}
-                  />
-                </div>
+                {!AI_DISABLED && (
+                  <>
+                    <div className="set-field">
+                      <div className="set-field-text">
+                        <label className="set-field-label">{t('setAiPanelSide')}</label>
+                      </div>
+                      <Dropdown
+                        className="set-dd"
+                        value={aiPrefs.side}
+                        ariaLabel={t('setAiPanelSide')}
+                        options={[
+                          { value: 'left', label: t('aiPanelSideLeft') },
+                          { value: 'right', label: t('aiPanelSideRight') },
+                        ]}
+                        onPick={(side) => updateAiPrefs({ side: side as AiPanelSide })}
+                      />
+                    </div>
+                    <div className="set-field">
+                      <div className="set-field-text">
+                        <label className="set-field-label">{t('setAiFontSize')}</label>
+                      </div>
+                      {aiPrefs.fontSize === 'custom' && (
+                        <CustomFontSizeInput
+                          value={aiPrefs.customFontSize}
+                          label={t('aiFontSizeCustom')}
+                          onCommit={(px) => updateAiPrefs({ customFontSize: px })}
+                        />
+                      )}
+                      <Dropdown
+                        className="set-dd"
+                        value={aiPrefs.fontSize}
+                        ariaLabel={t('setAiFontSize')}
+                        options={AI_FONT_SIZE_OPTIONS.map((opt) => ({
+                          value: opt.value,
+                          label: t(opt.labelKey),
+                        }))}
+                        onPick={(v) => {
+                          const fontSize = v as AiFontSize
+                          // start the custom size from the preset being left so nothing jumps
+                          updateAiPrefs(
+                            fontSize === 'custom' && aiPrefs.fontSize !== 'custom'
+                              ? { fontSize, customFontSize: aiPanelFontPx(aiPrefs) }
+                              : { fontSize },
+                          )
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="set-field">
                   <div className="set-field-text">
                     <div className="set-field-stack">
@@ -2067,51 +2077,55 @@ export function SettingsModal({
                     }}
                   />
                 </div>
-                <div className="set-field">
-                  <div className="set-field-text">
-                    <div className="set-field-stack">
-                      <div className="set-field-label">{t('setAiSpellcheck')}</div>
-                      <div className="set-field-desc">{t('setAiSpellcheckDesc')}</div>
+                {!AI_DISABLED && (
+                  <>
+                    <div className="set-field">
+                      <div className="set-field-text">
+                        <div className="set-field-stack">
+                          <div className="set-field-label">{t('setAiSpellcheck')}</div>
+                          <div className="set-field-desc">{t('setAiSpellcheckDesc')}</div>
+                        </div>
+                      </div>
+                      <button
+                        className="set-switch"
+                        role="switch"
+                        aria-checked={aiPrefs.spellcheck}
+                        aria-label={t('setAiSpellcheck')}
+                        onClick={() => updateAiPrefs({ spellcheck: !aiPrefs.spellcheck })}
+                      />
                     </div>
-                  </div>
-                  <button
-                    className="set-switch"
-                    role="switch"
-                    aria-checked={aiPrefs.spellcheck}
-                    aria-label={t('setAiSpellcheck')}
-                    onClick={() => updateAiPrefs({ spellcheck: !aiPrefs.spellcheck })}
-                  />
-                </div>
-                <div className="set-field">
-                  <div className="set-field-text">
-                    <div className="set-field-stack">
-                      <div className="set-field-label">{t('setAiShowSidebar')}</div>
-                      <div className="set-field-desc">{t('setAiShowSidebarDesc')}</div>
+                    <div className="set-field">
+                      <div className="set-field-text">
+                        <div className="set-field-stack">
+                          <div className="set-field-label">{t('setAiShowSidebar')}</div>
+                          <div className="set-field-desc">{t('setAiShowSidebarDesc')}</div>
+                        </div>
+                      </div>
+                      <button
+                        className="set-switch"
+                        role="switch"
+                        aria-checked={aiPrefs.showAiSidebar}
+                        aria-label={t('setAiShowSidebar')}
+                        onClick={() => updateAiPrefs({ showAiSidebar: !aiPrefs.showAiSidebar })}
+                      />
                     </div>
-                  </div>
-                  <button
-                    className="set-switch"
-                    role="switch"
-                    aria-checked={aiPrefs.showAiSidebar}
-                    aria-label={t('setAiShowSidebar')}
-                    onClick={() => updateAiPrefs({ showAiSidebar: !aiPrefs.showAiSidebar })}
-                  />
-                </div>
-                <div className="set-field">
-                  <div className="set-field-text">
-                    <div className="set-field-stack">
-                      <div className="set-field-label">{t('setAiOpenInNewDocs')}</div>
-                      <div className="set-field-desc">{t('setAiOpenInNewDocsDesc')}</div>
+                    <div className="set-field">
+                      <div className="set-field-text">
+                        <div className="set-field-stack">
+                          <div className="set-field-label">{t('setAiOpenInNewDocs')}</div>
+                          <div className="set-field-desc">{t('setAiOpenInNewDocsDesc')}</div>
+                        </div>
+                      </div>
+                      <button
+                        className="set-switch"
+                        role="switch"
+                        aria-checked={aiPrefs.openInNewDocs}
+                        aria-label={t('setAiOpenInNewDocs')}
+                        onClick={() => updateAiPrefs({ openInNewDocs: !aiPrefs.openInNewDocs })}
+                      />
                     </div>
-                  </div>
-                  <button
-                    className="set-switch"
-                    role="switch"
-                    aria-checked={aiPrefs.openInNewDocs}
-                    aria-label={t('setAiOpenInNewDocs')}
-                    onClick={() => updateAiPrefs({ openInNewDocs: !aiPrefs.openInNewDocs })}
-                  />
-                </div>
+                  </>
+                )}
                 {defaultApp && defaultApp.state !== 'unsupported' && (
                   <div className="set-field">
                     <div className="set-field-text">
@@ -2180,8 +2194,8 @@ export function SettingsModal({
                       style={{ color: 'inherit', textDecoration: 'underline' }}
                     >
                       GenOffice
-                    </a>
-                    {' '}— Apache-2.0 (© Mainfunc, Inc.)
+                    </a>{' '}
+                    — Apache-2.0 (© Mainfunc, Inc.)
                   </div>
                   <div>
                     Runtime:{' '}
@@ -2194,8 +2208,8 @@ export function SettingsModal({
                       style={{ color: 'inherit', textDecoration: 'underline' }}
                     >
                       Electron for OpenHarmony
-                    </a>
-                    {' '}— MIT · Chromium
+                    </a>{' '}
+                    — MIT · Chromium
                   </div>
                   <div>
                     <a
@@ -2212,25 +2226,25 @@ export function SettingsModal({
                 </div>
                 {/* 更新通道在鸿蒙分发下无意义，先隐藏；代码保留，恢复时去掉本包裹即可 */}
                 {false && (
-                <div className="set-field">
-                  <div className="set-field-text">
-                    <label className="set-field-label">{t('updateChannel')}</label>
+                  <div className="set-field">
+                    <div className="set-field-text">
+                      <label className="set-field-label">{t('updateChannel')}</label>
+                    </div>
+                    <Dropdown
+                      className="set-dd"
+                      value={channel}
+                      ariaLabel={t('updateChannel')}
+                      options={CHANNEL_OPTIONS.map((opt) => ({
+                        value: opt.value,
+                        label: t(opt.labelKey),
+                      }))}
+                      onPick={(v) => {
+                        const next = v === 'beta' ? 'beta' : 'stable'
+                        setChannel(next)
+                        void window.aiOffice.setUpdateChannel(next)
+                      }}
+                    />
                   </div>
-                  <Dropdown
-                    className="set-dd"
-                    value={channel}
-                    ariaLabel={t('updateChannel')}
-                    options={CHANNEL_OPTIONS.map((opt) => ({
-                      value: opt.value,
-                      label: t(opt.labelKey),
-                    }))}
-                    onPick={(v) => {
-                      const next = v === 'beta' ? 'beta' : 'stable'
-                      setChannel(next)
-                      void window.aiOffice.setUpdateChannel(next)
-                    }}
-                  />
-                </div>
                 )}
               </>
             )}

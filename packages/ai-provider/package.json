@@ -18,7 +18,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@genoffice/agent-core": "*"
+    "@genoffice/agent-core": "*",
+    "@genoffice/electron-utils": "*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

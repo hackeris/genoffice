@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./atomic-write": "./src/atomic-write.ts",
     "./aigc-meta": "./src/aigc-meta.ts",
+    "./ai-gate": "./src/ai-gate.ts",
     "./pdf-aigc": "./src/pdf-aigc.ts",
     "./drop-open": "./src/drop-open.ts",
     "./font-catalog": "./src/font-catalog.ts",
