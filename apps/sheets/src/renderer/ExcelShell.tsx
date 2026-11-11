@@ -833,15 +833,16 @@ export function ExcelShell({
     ...(selectedVisualKind === 'image' ? (['Picture Format'] as const) : []),
   ]
   const saveAsTitle = `${t('appSaveAs')} (${platformShortcuts('⇧⌘S')})`
+  // With the panel gated off (see ai-gate) nothing occupies its grid column,
+  // so the sheet must take the whole row instead of the collapsed 34px slot.
+  const shellClass = AI_DISABLED
+    ? 'copilot-off'
+    : isCopilotOpen
+      ? ''
+      : `copilot-collapsed${aiSidebarEnabled ? '' : ' copilot-off'}`
 
   return (
-    <main
-      className={`app-shell ${isCopilotOpen ? '' : 'copilot-collapsed'}${
-        !isCopilotOpen && !aiSidebarEnabled ? ' copilot-off' : ''
-      }`}
-      inert={openingWorkbook}
-      aria-busy={openingWorkbook}
-    >
+    <main className={`app-shell ${shellClass}`} inert={openingWorkbook} aria-busy={openingWorkbook}>
       <header className={`excel-header ${collapse.rootClass}`} ref={collapse.rootRef}>
         <nav
           className={`ribbon-tabs ${IN_TAB ? '' : IS_MAC ? 'ribbon-tabs-mac' : 'ribbon-tabs-win'}`}
