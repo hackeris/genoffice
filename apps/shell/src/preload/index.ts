@@ -280,6 +280,11 @@ const homeApi: HomeApi = {
     ipcRenderer.on(HOME_CHANNELS.folderChanged, listener)
     return () => ipcRenderer.removeListener(HOME_CHANNELS.folderChanged, listener)
   },
+  onStorageReady(handler) {
+    const listener = () => handler()
+    ipcRenderer.on(HOME_CHANNELS.storageReady, listener)
+    return () => ipcRenderer.removeListener(HOME_CHANNELS.storageReady, listener)
+  },
   onOpenSettings(handler) {
     const listener = (_event: IpcRendererEvent, section: unknown) => {
       if (typeof section === 'string') handler(section)

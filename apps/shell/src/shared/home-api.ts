@@ -297,6 +297,8 @@ export interface HomeApi {
   deleteFolder(dir: string): Promise<void>
   /** a folder under the root changed on disk (created/renamed/deleted/moved, from anywhere) */
   onFolderChanged(handler: (dirs: string[]) => void): () => void
+  /** the first-launch directory grant completed: re-read the roots and their listings */
+  onStorageReady(handler: () => void): () => void
   /** 主进程请求打开设置弹窗(如帮助菜单的「关于」直达),参数为初始区块 id */
   onOpenSettings(handler: (section: string) => void): () => void
   /** 主进程请求打开第三方声明弹窗(帮助菜单项) */
@@ -545,6 +547,7 @@ export const HOME_CHANNELS = {
   movePaths: 'home:move-paths',
   deleteFolder: 'home:folder-delete',
   folderChanged: 'home:folder-changed',
+  storageReady: 'home:storage-ready',
   openSettings: 'home:open-settings',
   openNotices: 'home:open-notices',
   thirdPartyNotices: 'home:third-party-notices',

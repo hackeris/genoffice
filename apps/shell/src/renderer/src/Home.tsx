@@ -1087,6 +1087,19 @@ export function Home() {
     })
   }, [invalidateFolders, trackedFolder])
 
+  // First launch: the directory grant lands after the home is already up, and the
+  // root was described as unusable. The main process signals the grant once the
+  // system dirs turn writable (see main-shim ⑦); re-describe the roots and drop
+  // the listings cached while the folder could not be read.
+  const rootsRef = useRef(roots)
+  rootsRef.current = roots
+  useEffect(() => {
+    return window.aiOffice.onStorageReady(() => {
+      loadRoot()
+      invalidateFolders(rootsRef.current.map((r) => r.path))
+    })
+  }, [loadRoot, invalidateFolders])
+
   // ── Paged loading ──
   // stale responses are dropped via a request sequence number (when views/filters switch quickly)
   const requestSeq = useRef(0)
